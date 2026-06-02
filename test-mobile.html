@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: sans-serif;
+  background: #111;
+  color: #eee;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#topbar { flex-shrink:0; background:#222; padding:12px; border-bottom:1px solid #444; }
+#buttons { flex-shrink:0; background:#1a2a1a; padding:8px; border-bottom:1px solid #444; display:flex; gap:8px; }
+#buttons button { flex:1; padding:10px; background:#2a4a2a; color:#4f8; border:2px solid #4f8; border-radius:8px; font-size:14px; font-weight:bold; }
+#messages { flex:1; overflow-y:auto; padding:16px; }
+#input { flex-shrink:0; background:#222; padding:12px; border-top:1px solid #444; }
+#input input { width:100%; padding:10px; background:#333; border:1px solid #555; border-radius:8px; color:#eee; font-size:16px; }
+</style>
+</head>
+<body>
+  <div id="topbar">My Assistant</div>
+  <div id="buttons">
+    <button ontouchstart="event.preventDefault();alert('EN');" onclick="alert('EN')">🇺🇸 EN</button>
+    <button ontouchstart="event.preventDefault();alert('HE');" onclick="alert('HE')">🇮🇱 HE</button>
+    <button ontouchstart="event.preventDefault();alert('RU');" onclick="alert('RU')">🇷🇺 RU</button>
+  </div>
+  <div id="messages">Chat messages here</div>
+  <div id="input"><input placeholder="Type here..."></div>
+</body>
+</html>
