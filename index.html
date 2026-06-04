@@ -1048,8 +1048,12 @@ function startSingleLang(lang) {
     voiceStatus.classList.remove('show');
     inputEl.placeholder = 'Message your assistant…';
     if (final.trim()) {
-      if (checkVoiceCommand(final)) return; // language switch command
-      if (autoSend && apiKey) setTimeout(() => send(), 200);
+      // Try command check in current language result
+      if (checkVoiceCommand(final)) return;
+      // Also try a quick parallel recognition in other languages to catch cross-language commands
+      tryCommandInOtherLangs(final, () => {
+        if (autoSend && apiKey) setTimeout(() => send(), 200);
+      });
     }
   };
   recognition.onerror = e => {
@@ -1188,6 +1192,40 @@ function addBubble(role, text, loading=false) {
 // ── Send ───────────────────────────────────────────────────────────────────
 
 // ── Voice command detection ────────────────────────────────────────────────
+// Try recognizing the audio in other languages to catch cross-language switch commands
+function tryCommandInOtherLangs(currentText, onNoCommand) {
+  const otherLangs = ['en-US', 'he-IL', 'ru-RU'].filter(l => l !== micLang);
+  let checked = 0;
+
+  // If we already have text that looks like a command attempt, try other langs
+  // Simple heuristic: short phrase (< 6 words) might be a command
+  const wordCount = currentText.trim().split(/\s+/).length;
+  if (wordCount > 6) { onNoCommand(); return; }
+
+  let commandFound = false;
+  otherLangs.forEach(lang => {
+    if (commandFound) return;
+    const r = new SR();
+    r.lang = lang;
+    r.continuous = false;
+    r.interimResults = false;
+    r.onresult = e => {
+      const t = e.results[0][0].transcript;
+      if (!commandFound && checkVoiceCommand(t)) commandFound = true;
+    };
+    r.onend = () => {
+      checked++;
+      if (checked === otherLangs.length && !commandFound) onNoCommand();
+    };
+    r.onerror = () => {
+      checked++;
+      if (checked === otherLangs.length && !commandFound) onNoCommand();
+    };
+    try { r.start(); } catch(e) { checked++; if (checked === otherLangs.length && !commandFound) onNoCommand(); }
+  });
+}
+
+
 const VOICE_COMMANDS = {
   // Switch to English
   'en-US': [
@@ -1214,24 +1252,18 @@ const VOICE_COMMANDS = {
 
 function checkVoiceCommand(text) {
   const lower = text.toLowerCase().trim();
-  // Show heard text in status for debugging
-  voiceStatus.classList.add('show');
-  voiceStatusText.textContent = 'Heard: ' + text;
-  setTimeout(() => voiceStatus.classList.remove('show'), 3000);
 
-  // Broad keyword matching
-  if (lower.includes('english') || lower.includes('אנגלית')) { switchLanguage('en-US'); return true; }
-  if (lower.includes('hebrew') || lower.includes('עברית') || lower.includes('עברי')) { switchLanguage('he-IL'); return true; }
-  if (lower.includes('russian') || lower.includes('русск') || lower.includes('русский') || lower.includes('руcc')) { switchLanguage('ru-RU'); return true; }
+  // English keywords - work in any language mode
+  const enWords = ['english', 'אנגלית', 'английский', 'по английски', 'англи'];
+  // Hebrew keywords - including how they might sound when transcribed in Russian/English
+  const heWords = ['hebrew', 'עברית', 'עברי', 'иврит', 'иврите', 'ivrit', 'ivrit'];
+  // Russian keywords - including how they might sound when transcribed in Hebrew/English
+  const ruWords = ['russian', 'русск', 'руcc', 'по русски', 'на русском', 'russian', 'russia', 'רוסית', 'רוסי'];
 
-  for (const [lang, commands] of Object.entries(VOICE_COMMANDS)) {
-    for (const cmd of commands) {
-      if (lower.includes(cmd)) {
-        switchLanguage(lang);
-        return true;
-      }
-    }
-  }
+  if (enWords.some(w => lower.includes(w))) { switchLanguage('en-US'); return true; }
+  if (heWords.some(w => lower.includes(w))) { switchLanguage('he-IL'); return true; }
+  if (ruWords.some(w => lower.includes(w))) { switchLanguage('ru-RU'); return true; }
+
   return false;
 }
 
