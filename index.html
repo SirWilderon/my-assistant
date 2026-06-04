@@ -41,13 +41,16 @@
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     overflow: hidden;
+    width: 100%;
+    height: 100%;
   }
   #main-col {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     flex: 1;
     overflow: hidden;
     min-height: 0;
+    width: 100%;
   }
 
   /* ── Top bar ── */
@@ -60,6 +63,7 @@
     gap: 10px;
     background: var(--surface);
   }
+  #topbar + div { flex-shrink: 0; }
 
   .brand-icon {
     width: 30px; height: 30px; border-radius: 9px;
@@ -95,11 +99,11 @@
   /* ── API key banner ── */
   #key-banner {
     flex-shrink: 0;
-    padding: 10px 16px;
+    padding: 8px 10px;
     background: var(--amber-dim);
     border-bottom: 1px solid rgba(245,158,11,0.25);
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
   }
   #key-banner.hidden { display: none; }
@@ -403,7 +407,8 @@
     /* hide mobile settings sheet on desktop */
     #settings-overlay, #settings-sheet { display: none !important; }
     .status-pill { display: none; }
-    #quick-bar { display: none !important; }
+
+
   }
 
   /* ── Mic permission modal ── */
@@ -605,6 +610,7 @@
   </div>
 </nav>
 
+
 <!-- Main column -->
 <div id="main-col">
 
@@ -613,28 +619,15 @@
     <div class="brand-icon">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
     </div>
-    <span class="brand-name">My Assistant</span>
-    <div class="status-pill" id="status-pill"><span class="dot" id="status-dot"></span><span id="status-pill-text">Not connected</span></div>
+    <div id="status-pill" style="width:12px;height:12px;border-radius:50%;background:#f87171;flex-shrink:0;" title="Not connected"></div>
+    <!-- Language buttons always visible in topbar -->
+    <button id="lang-btn-en" ontouchstart="event.preventDefault();switchLanguage('en-US');" onclick="switchLanguage('en-US')" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">🇺🇸EN</button>
+    <button id="lang-btn-he" ontouchstart="event.preventDefault();switchLanguage('he-IL');" onclick="switchLanguage('he-IL')" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">🇮🇱HE</button>
+    <button id="lang-btn-ru" ontouchstart="event.preventDefault();switchLanguage('ru-RU');" onclick="switchLanguage('ru-RU')" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">🇷🇺RU</button>
     <button id="settings-btn" aria-label="Settings">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
     </button>
   </div>
-
-  <!-- Quick access bar for Calendar & Tasks (mobile) -->
-  <div id="quick-bar" style="flex-shrink:0; display:flex; gap:8px; padding:8px 12px; border-bottom:1px solid var(--border); background:var(--surface);">
-    <button onclick="openGooglePanel('calendar')" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px; border-radius:10px; border:1px solid var(--border2); background:var(--surface2); color:var(--text); font-family:var(--font); font-size:13px; cursor:pointer;">
-      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      Calendar
-    </button>
-    <button onclick="openGooglePanel('tasks')" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px; border-radius:10px; border:1px solid var(--border2); background:var(--surface2); color:var(--text); font-family:var(--font); font-size:13px; cursor:pointer;">
-      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-      Tasks
-    </button>
-    <button onclick="injectGoogleContext()" id="briefing-btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px; border-radius:10px; border:1px solid rgba(79,142,247,0.3); background:var(--accent-dim); color:var(--accent); font-family:var(--font); font-size:13px; cursor:pointer;">
-      🌅 Briefing
-    </button>
-  </div>
-
   <!-- API key banner (mobile/desktop) -->
   <div id="key-banner">
     <input type="text" id="api-key-input" placeholder="Paste API key here…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text">
@@ -776,9 +769,9 @@ function setConnected(key) {
     apiKey = key;
     localStorage.setItem('gemini_key', key);
     try { document.getElementById('key-banner').classList.add('hidden'); } catch(e){}
-    try { document.getElementById('status-dot').className = 'dot ok'; } catch(e){}
-    try { document.getElementById('status-pill-text').textContent = 'Connected'; } catch(e){}
-    try { document.getElementById('status-pill').className = 'status-pill ok'; } catch(e){}
+    try { document.getElementById('status-pill').style.background = '#34d399'; document.getElementById('status-pill').title = 'Connected'; } catch(e){}
+    
+    
     try {
       const db = document.getElementById('d-api-badge');
       if (db) { db.className = 'd-api-badge connected'; }
@@ -791,6 +784,7 @@ function setConnected(key) {
 }
 
 // Pre-fill saved key and auto-connect
+updateLangButtons();
 if (apiKey) {
   document.getElementById('api-key-input').value = apiKey;
   setConnected(apiKey);
@@ -1053,7 +1047,10 @@ function startSingleLang(lang) {
     inputWrap.classList.remove('recording');
     voiceStatus.classList.remove('show');
     inputEl.placeholder = 'Message your assistant…';
-    if (final.trim() && autoSend && apiKey) setTimeout(() => send(), 200);
+    if (final.trim()) {
+      if (checkVoiceCommand(final)) return; // language switch command
+      if (autoSend && apiKey) setTimeout(() => send(), 200);
+    }
   };
   recognition.onerror = e => {
     isRecording = false;
@@ -1188,6 +1185,75 @@ function addBubble(role, text, loading=false) {
 }
 
 // ── Send ───────────────────────────────────────────────────────────────────
+
+// ── Voice command detection ────────────────────────────────────────────────
+const VOICE_COMMANDS = {
+  // Switch to English
+  'en-US': [
+    'switch to english', 'change to english', 'speak english',
+    'english please', 'in english', 'english mode',
+    'speak to me in english', 'change language to english'
+  ],
+  // Switch to Hebrew
+  'he-IL': [
+    'switch to hebrew', 'change to hebrew', 'speak hebrew',
+    'hebrew please', 'in hebrew', 'hebrew mode',
+    'עברית', 'עבור לעברית', 'דבר עברית', 'שנה לעברית',
+    'דבר אליי בעברית', 'עברית בבקשה', 'החלף לעברית'
+  ],
+  // Switch to Russian
+  'ru-RU': [
+    'switch to russian', 'change to russian', 'speak russian',
+    'russian please', 'in russian', 'russian mode',
+    'переключись на русский', 'говори по русски', 'говори по-русски',
+    'на русском', 'русский язык', 'смени язык на русский',
+    'переключи на русский', 'по русски пожалуйста'
+  ]
+};
+
+function checkVoiceCommand(text) {
+  const lower = text.toLowerCase().trim();
+  for (const [lang, commands] of Object.entries(VOICE_COMMANDS)) {
+    for (const cmd of commands) {
+      if (lower.includes(cmd)) {
+        switchLanguage(lang);
+        return true; // command matched, don't send to Gemini
+      }
+    }
+  }
+  return false; // not a command, send to Gemini normally
+}
+
+function switchLanguage(lang) {
+  micLang = lang;
+  localStorage.setItem('mic_lang', lang);
+  syncLangSelectors();
+  updateLangButtons();
+
+  const names = { 'en-US': 'English 🇺🇸', 'he-IL': 'Hebrew 🇮🇱', 'ru-RU': 'Russian 🇷🇺' };
+  const name = names[lang] || lang;
+
+  // Clear input and show confirmation bubble
+  inputEl.value = '';
+  inputEl.dispatchEvent(new Event('input'));
+  addBubble('ai', `Switched to ${name}! You can now speak in ${name.split(' ')[0]}.`);
+
+  // Also update TTS voice to match
+  loadVoices();
+}
+
+function updateLangButtons() {
+  const map = { 'en-US': 'lang-btn-en', 'he-IL': 'lang-btn-he', 'ru-RU': 'lang-btn-ru' };
+  Object.entries(map).forEach(([lang, id]) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const active = micLang === lang;
+    btn.style.borderColor = active ? 'var(--accent)' : 'var(--border2)';
+    btn.style.background = active ? 'var(--accent-dim)' : 'var(--surface2)';
+    btn.style.color = active ? 'var(--accent)' : 'var(--text)';
+  });
+}
+
 async function send() {
   const text = inputEl.value.trim();
   if (!text || !apiKey) return;
