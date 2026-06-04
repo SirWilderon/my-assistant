@@ -1048,12 +1048,10 @@ function startSingleLang(lang) {
     voiceStatus.classList.remove('show');
     inputEl.placeholder = 'Message your assistant…';
     if (final.trim()) {
-      // Try command check in current language result
+      // Check for language switch command first
       if (checkVoiceCommand(final)) return;
-      // Also try a quick parallel recognition in other languages to catch cross-language commands
-      tryCommandInOtherLangs(final, () => {
-        if (autoSend && apiKey) setTimeout(() => send(), 200);
-      });
+      // Auto-send to Gemini
+      if (apiKey) setTimeout(() => send(), 200);
     }
   };
   recognition.onerror = e => {
@@ -1152,7 +1150,7 @@ function startAutoDetect() {
       inputEl.dispatchEvent(new Event('input'));
       voiceStatusText.textContent = 'Got it!';
       setTimeout(() => voiceStatus.classList.remove('show'), 800);
-      if (autoSend && apiKey) setTimeout(() => send(), 300);
+      if (apiKey) setTimeout(() => send(), 300);
     } else {
       voiceStatus.classList.remove('show');
     }
@@ -1276,8 +1274,10 @@ function switchLanguage(lang) {
   const names = { 'en-US': 'English 🇺🇸', 'he-IL': 'Hebrew 🇮🇱', 'ru-RU': 'Russian 🇷🇺' };
   const name = names[lang] || lang;
 
-  // Clear input and show confirmation bubble
+  // Clear input so command text never appears in the input field
   inputEl.value = '';
+  inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
   inputEl.dispatchEvent(new Event('input'));
   addBubble('ai', `Switched to ${name}! You can now speak in ${name.split(' ')[0]}.`);
 
