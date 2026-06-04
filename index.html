@@ -1048,8 +1048,8 @@ function startSingleLang(lang) {
     voiceStatus.classList.remove('show');
     inputEl.placeholder = 'Message your assistant…';
     if (final.trim()) {
-      // Check for language switch command first
-      if (checkVoiceCommand(final)) return;
+      // Check for language switch command in ALL languages (not just current)
+      if (checkVoiceCommandAllLangs(final)) return;
       // Auto-send to Gemini
       if (apiKey) setTimeout(() => send(), 200);
     }
@@ -1145,7 +1145,7 @@ function startAutoDetect() {
   function finishAutoDetect() {
     resetMicState();
     if (bestResult && bestResult.transcript) {
-      if (checkVoiceCommand(bestResult.transcript)) return; // language switch command
+      if (checkVoiceCommandAllLangs(bestResult.transcript)) return; // language switch command
       inputEl.value = bestResult.transcript;
       inputEl.dispatchEvent(new Event('input'));
       voiceStatusText.textContent = 'Got it!';
@@ -1247,6 +1247,32 @@ const VOICE_COMMANDS = {
     'переключи на русский', 'по русски пожалуйста'
   ]
 };
+
+// Check voice command treating text as if recognized by any language
+// This handles cross-language commands without needing new mic sessions
+function checkVoiceCommandAllLangs(text) {
+  const lower = text.toLowerCase().trim();
+
+  // Direct keyword check (works when recognizer gets it right)
+  if (checkVoiceCommand(text)) return true;
+
+  // Phonetic approximations - how each language sounds when heard by wrong recognizer
+  // Hebrew words heard by Russian recognizer
+  const hePhonetic = ['иврит', 'ивrit', 'иврите', 'еврейский', 'еврейск'];
+  // Russian words heard by Hebrew recognizer  
+  const ruPhonetic = ['רוסית', 'רוסי', 'русс', 'russi', 'russo'];
+  // Hebrew words heard by English recognizer
+  const heEnglish = ['ivrit', 'ivrit', 'hebrew'];
+  // Russian words heard by English recognizer
+  const ruEnglish = ['russian', 'russia'];
+
+  if (hePhonetic.some(w => lower.includes(w))) { switchLanguage('he-IL'); return true; }
+  if (ruPhonetic.some(w => lower.includes(w))) { switchLanguage('ru-RU'); return true; }
+  if (heEnglish.some(w => lower.includes(w))) { switchLanguage('he-IL'); return true; }
+  if (ruEnglish.some(w => lower.includes(w))) { switchLanguage('ru-RU'); return true; }
+
+  return false;
+}
 
 function checkVoiceCommand(text) {
   const lower = text.toLowerCase().trim();
