@@ -1048,6 +1048,8 @@ function startSingleLang(lang) {
     voiceStatus.classList.remove('show');
     inputEl.placeholder = 'Message your assistant…';
     if (final.trim()) {
+      // DEBUG: show exactly what mic heard
+      addBubble('user', '[MIC HEARD]: ' + final);
       // Check for language switch command in ALL languages (not just current)
       if (checkVoiceCommandAllLangs(final)) return;
       // Auto-send to Gemini
