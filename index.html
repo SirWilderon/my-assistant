@@ -1048,11 +1048,14 @@ function startSingleLang(lang) {
     voiceStatus.classList.remove('show');
     inputEl.placeholder = 'Message your assistant…';
     if (final.trim()) {
-      // DEBUG: show exactly what mic heard
-      addBubble('user', '[MIC HEARD]: ' + final);
+      // Clear input first so command text never gets sent
+      inputEl.value = '';
+      sendBtn.disabled = true;
       // Check for language switch command in ALL languages (not just current)
       if (checkVoiceCommandAllLangs(final)) return;
-      // Auto-send to Gemini
+      // Not a command - restore text and send to Gemini
+      inputEl.value = final;
+      inputEl.dispatchEvent(new Event('input'));
       if (apiKey) setTimeout(() => send(), 200);
     }
   };
