@@ -1249,8 +1249,14 @@ function switchLanguage(lang) {
   inputEl.dispatchEvent(new Event('input'));
   addBubble('ai', `Switched to ${name}! You can now speak in ${name.split(' ')[0]}.`);
 
-  // Also update TTS voice to match
+  // Update TTS voice to match
   loadVoices();
+
+  // If currently recording, restart recognition in new language
+  if (isRecording) {
+    stopRecording();
+    setTimeout(() => startRecognition(), 300);
+  }
 }
 
 function updateLangButtons() {
