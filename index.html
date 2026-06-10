@@ -1762,8 +1762,24 @@ async function getMsToken() {
 }
 
 function signInMicrosoft() {
-  if (!msalInstance) { alert('Loading... please try again'); return; }
-  msalInstance.loginRedirect({ scopes: MS_SCOPES });
+  // If MSAL not loaded yet, try to init first
+  if (!window.msal) {
+    showMicError('Microsoft library loading... please try again in a moment');
+    return;
+  }
+  if (!msalInstance) {
+    initMsal();
+    setTimeout(signInMicrosoft, 1000);
+    return;
+  }
+  try {
+    msalInstance.loginRedirect({
+      scopes: MS_SCOPES,
+      redirectUri: window.location.origin + window.location.pathname,
+    });
+  } catch(e) {
+    showMicError('Sign in error: ' + e.message);
+  }
 }
 
 function updateTodoUI(connected) {
