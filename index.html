@@ -1744,7 +1744,7 @@ function signInMicrosoft() {
     '&scope=' + encodeURIComponent(MS_SCOPES) +
     '&response_mode=fragment' +
     '&prompt=select_account';
-  window.location.href = authUrl;
+  window.open(authUrl, '_self');
 }
 
 async function getMsToken() {
@@ -2058,7 +2058,7 @@ window.addEventListener('resize', () => {
       <div style="font-size:40px;margin-bottom:12px;">📋</div>
       <div style="font-size:15px;margin-bottom:8px;">Connect Microsoft To Do</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Sign in to view and add tasks by voice</div>
-      <a id="ms-signin-btn" href="#" ontouchstart="signInMicrosoft();" onclick="signInMicrosoft();return false;" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:12px;border:1px solid rgba(0,120,212,0.3);background:rgba(0,120,212,0.1);color:#2b88d8;font-family:var(--font);font-size:15px;font-weight:500;text-decoration:none;margin-top:8px;">
+      <a href="https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=3ccb25e9-7307-49be-90f6-a78d6e5e0c67&response_type=token&redirect_uri=https://sirwilderon.github.io/my-assistant/&scope=Tasks.Read%20Tasks.ReadWrite%20User.Read%20offline_access&response_mode=fragment&prompt=select_account" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:12px;border:1px solid rgba(0,120,212,0.3);background:rgba(0,120,212,0.1);color:#2b88d8;font-family:var(--font);font-size:15px;font-weight:500;text-decoration:none;margin-top:8px;">
         <svg width="20" height="20" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
         Sign in with Microsoft
       </a>
