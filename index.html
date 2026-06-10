@@ -1983,12 +1983,17 @@ async function completeTodoTask(listId, taskId, el) {
 async function checkTodoVoiceCommand(text) {
   const lower = text.toLowerCase().trim();
 
-  // Patterns: "add task: ...", "add to do: ...", "remind me to ...", "new task: ..."
+  // Patterns - flexible, no colon required
   const patterns = [
-    /^(?:add (?:task|to.?do)|new task|task)[:\s]+(.+)/i,
-    /^(?:remind me to|reminder)[:\s]+(.+)/i,
-    /^(?:הוסף משימה|משימה חדשה)[:\s]+(.+)/i,  // Hebrew
-    /^(?:добавь задачу|новая задача)[:\s]+(.+)/i,  // Russian
+    /^(?:add task|new task|add to do|add todo)[:\s]+(.+)/i,
+    /^(?:add task|new task|add to do|add todo)\s+(.+)/i,
+    /^(?:remind me to|reminder to|reminder)[:\s]+(.+)/i,
+    /^(?:remind me to|reminder to|reminder)\s+(.+)/i,
+    /^(?:task)[:\s]+(.+)/i,
+    /^(?:הוסף משימה|משימה חדשה)[:\s]+(.+)/i,
+    /^(?:הוסף משימה|משימה חדשה)\s+(.+)/i,
+    /^(?:добавь задачу|новая задача)[:\s]+(.+)/i,
+    /^(?:добавь задачу|новая задача)\s+(.+)/i,
   ];
 
   for (const pattern of patterns) {
