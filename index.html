@@ -1938,12 +1938,18 @@ async function addTodoTask(title, listName = null, dueDate = null) {
     const body = { title };
     if (dueDate) body.dueDateTime = { dateTime: new Date(dueDate).toISOString(), timeZone: 'UTC' };
 
-    await fetch(`https://graph.microsoft.com/v1.0/me/todo/lists/${targetListId}/tasks`, {
+    const addRes = await fetch(`https://graph.microsoft.com/v1.0/me/todo/lists/${targetListId}/tasks`, {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    return true;
+    const addData = await addRes.json();
+    // Find list name for confirmation
+    const listsRes2 = await fetch('https://graph.microsoft.com/v1.0/me/todo/lists/' + targetListId, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const listInfo = await listsRes2.json();
+    return listInfo.displayName || 'Tasks';
   } catch(e) {
     console.error('Add task error:', e);
     return false;
@@ -1955,8 +1961,8 @@ async function addTodoTaskFromInput() {
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
-  const ok = await addTodoTask(text);
-  if (ok) { loadTodoTasks(); }
+  const listName = await addTodoTask(text);
+  if (listName) { loadTodoTasks(); }
 }
 
 async function completeTodoTask(listId, taskId, el) {
@@ -1989,9 +1995,9 @@ async function checkTodoVoiceCommand(text) {
     const match = text.match(pattern);
     if (match) {
       const taskTitle = match[1].trim();
-      const ok = await addTodoTask(taskTitle);
-      if (ok) {
-        addBubble('ai', '✅ Added to Microsoft To Do: "' + taskTitle + '"');
+      const listName = await addTodoTask(taskTitle);
+      if (listName) {
+        addBubble('ai', '✅ Added to To Do list "' + listName + '": "' + taskTitle + '"');
       } else {
         addBubble('ai', '⚠️ Could not add task. Please sign in to Microsoft To Do first.');
       }
