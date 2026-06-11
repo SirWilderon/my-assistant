@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect Microsoft To Do</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; background: #0f1117; color: #e8eaf0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.card { background: #181c27; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; }
+h1 { font-size: 20px; margin-bottom: 8px; }
+p { font-size: 14px; color: #7a7f94; margin-bottom: 20px; line-height: 1.5; }
+.btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+.btn-primary { background: #0078d4; color: white; }
+.btn-secondary { background: #1f2435; color: #e8eaf0; border: 1px solid rgba(255,255,255,0.1); }
+.code-box { background: #0f1117; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 16px; margin: 16px 0; display: none; }
+.code { font-size: 32px; font-weight: 700; letter-spacing: 6px; text-align: center; color: #4f8ef7; margin: 10px 0; }
+.link { color: #4f8ef7; word-break: break-all; font-size: 14px; }
+.status { font-size: 14px; color: #7a7f94; text-align: center; margin-top: 10px; }
+.success { color: #34d399; font-size: 16px; text-align: center; padding: 20px 0; display: none; }
+label { font-size: 13px; color: #7a7f94; display: block; margin-bottom: 6px; }
+input { width: 100%; padding: 10px 12px; background: #0f1117; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #e8eaf0; font-size: 14px; margin-bottom: 12px; outline: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📋 Connect Microsoft To Do</h1>
+  <p>Connect your Microsoft To Do account to add tasks by voice from the assistant app.</p>
+
+  <div id="step1">
+    <button class="btn btn-primary" onclick="getCode()">Get Connection Code</button>
+  </div>
+
+  <div class="code-box" id="code-box">
+    <div style="font-size:13px;color:#7a7f94;margin-bottom:6px;">1. Open this link:</div>
+    <a id="auth-link" href="" target="_blank" class="link"></a>
+    <div style="font-size:13px;color:#7a7f94;margin:12px 0 6px;">2. Enter this code:</div>
+    <div class="code" id="user-code"></div>
+    <div style="font-size:12px;color:#7a7f94;text-align:center;">Sign in with wilderon@rocketmail.com</div>
+    <div class="status" id="status">⏳ Waiting for sign in...</div>
+  </div>
+
+  <div class="success" id="success">
+    ✅ Connected! You can now close this page and use voice to add tasks in the assistant app.
+    <br><br>
+    <a href="https://sirwilderon.github.io/my-assistant/" style="color:#4f8ef7;">← Back to Assistant</a>
+  </div>
+</div>
+
+<script>
+var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
+var MS_SCOPES = 'Tasks.Read Tasks.ReadWrite User.Read offline_access';
+var pollTimer = null;
+
+async function getCode() {
+  document.querySelector('.btn-primary').textContent = 'Loading...';
+  document.querySelector('.btn-primary').disabled = true;
+
+  try {
+    var params = new URLSearchParams({
+      client_id: MS_CLIENT_ID,
+      scope: MS_SCOPES,
+    });
+
+    var res = await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+
+    var data = await res.json();
+
+    if (!data.device_code) {
+      alert('Error: ' + (data.error_description || data.error));
+      document.querySelector('.btn-primary').textContent = 'Try Again';
+      document.querySelector('.btn-primary').disabled = false;
+      return;
+    }
+
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('code-box').style.display = 'block';
+    document.getElementById('auth-link').href = data.verification_uri;
+    document.getElementById('auth-link').textContent = data.verification_uri;
+    document.getElementById('user-code').textContent = data.user_code;
+
+    // Poll for token
+    var interval = (data.interval || 5) * 1000;
+    var expires = Date.now() + data.expires_in * 1000;
+
+    pollTimer = setInterval(async function() {
+      if (Date.now() > expires) {
+        clearInterval(pollTimer);
+        document.getElementById('status').textContent = '❌ Code expired. Please reload and try again.';
+        return;
+      }
+
+      try {
+        var tokenParams = new URLSearchParams({
+          client_id: MS_CLIENT_ID,
+          grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+          device_code: data.device_code,
+        });
+
+        var tokenRes = await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: tokenParams.toString(),
+        });
+
+        var tokenData = await tokenRes.json();
+
+        if (tokenData.access_token) {
+          clearInterval(pollTimer);
+          // Save token to localStorage (shared with main app on same domain)
+          localStorage.setItem('ms_access_token', tokenData.access_token);
+          localStorage.setItem('ms_token_expiry', Date.now() + tokenData.expires_in * 1000);
+          if (tokenData.refresh_token) localStorage.setItem('ms_refresh_token', tokenData.refresh_token);
+          document.getElementById('code-box').style.display = 'none';
+          document.getElementById('success').style.display = 'block';
+        } else if (tokenData.error && tokenData.error !== 'authorization_pending') {
+          clearInterval(pollTimer);
+          document.getElementById('status').textContent = '❌ ' + (tokenData.error_description || tokenData.error);
+        }
+      } catch(e) { /* keep polling */ }
+    }, interval);
+
+  } catch(e) {
+    alert('Error: ' + e.message);
+    document.querySelector('.btn-primary').textContent = 'Try Again';
+    document.querySelector('.btn-primary').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
