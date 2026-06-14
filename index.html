@@ -1440,20 +1440,6 @@ async function send() {
 
 // Prime microphone permission on page load
 // This forces Chrome to register the permission for this site
-// Check for Google OAuth token in URL hash immediately
-if (window.location.hash.includes('access_token')) {
-  const params = new URLSearchParams(window.location.hash.substring(1));
-  const token = params.get('access_token');
-  const expiresIn = params.get('expires_in') || 3600;
-  if (token) {
-    googleAccessToken = token;
-    localStorage.setItem('google_token', token);
-    localStorage.setItem('google_token_expiry', Date.now() + parseInt(expiresIn) * 1000);
-    window.history.replaceState({}, document.title, window.location.pathname);
-    // UI will update when initTokenClient runs
-  }
-}
-
 window.addEventListener('load', () => {
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -1475,23 +1461,24 @@ const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://w
 
 var googleAccessToken = null;
 let tokenClient = null;
+
+// Check for Google OAuth token in URL hash (from redirect)
+(function() {
+  if (window.location.hash.includes('access_token')) {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const token = params.get('access_token');
+    const expiresIn = params.get('expires_in') || 3600;
+    if (token) {
+      googleAccessToken = token;
+      localStorage.setItem('google_token', token);
+      localStorage.setItem('google_token_expiry', String(Date.now() + parseInt(expiresIn) * 1000));
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }
+})();
 let currentTab = 'calendar';
 
 // Init Google Identity Services
-// Check for Google OAuth token in URL hash immediately
-if (window.location.hash.includes('access_token')) {
-  const params = new URLSearchParams(window.location.hash.substring(1));
-  const token = params.get('access_token');
-  const expiresIn = params.get('expires_in') || 3600;
-  if (token) {
-    googleAccessToken = token;
-    localStorage.setItem('google_token', token);
-    localStorage.setItem('google_token_expiry', Date.now() + parseInt(expiresIn) * 1000);
-    window.history.replaceState({}, document.title, window.location.pathname);
-    // UI will update when initTokenClient runs
-  }
-}
-
 window.addEventListener('load', () => {
   // Check saved token
   const saved = localStorage.getItem('google_token');
@@ -1765,20 +1752,6 @@ ${tasks}`;
 // msAccessToken and todoListId declared above as var
 
 // Handle OAuth redirect on page load
-// Check for Google OAuth token in URL hash immediately
-if (window.location.hash.includes('access_token')) {
-  const params = new URLSearchParams(window.location.hash.substring(1));
-  const token = params.get('access_token');
-  const expiresIn = params.get('expires_in') || 3600;
-  if (token) {
-    googleAccessToken = token;
-    localStorage.setItem('google_token', token);
-    localStorage.setItem('google_token_expiry', Date.now() + parseInt(expiresIn) * 1000);
-    window.history.replaceState({}, document.title, window.location.pathname);
-    // UI will update when initTokenClient runs
-  }
-}
-
 window.addEventListener('load', () => {
   // Check for token in URL hash (implicit flow response)
   const hash = window.location.hash;
