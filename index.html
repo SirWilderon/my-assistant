@@ -1476,6 +1476,21 @@ window.addEventListener('load', () => {
 
 function initTokenClient() {
   if (!window.google) { setTimeout(initTokenClient, 500); return; }
+  // Check for token in URL hash (from OAuth redirect)
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    const params = new URLSearchParams(hash.substring(1));
+    const token = params.get('access_token');
+    const expiresIn = params.get('expires_in') || 3600;
+    if (token) {
+      googleAccessToken = token;
+      localStorage.setItem('google_token', token);
+      localStorage.setItem('google_token_expiry', Date.now() + parseInt(expiresIn) * 1000);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      updateGoogleUI(true);
+      loadGoogleData();
+    }
+  }
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: GOOGLE_SCOPES,
@@ -1495,8 +1510,14 @@ initTokenClient();
 
 const gSignInBtn = document.getElementById('g-signin-btn');
 if (gSignInBtn) {
-  gSignInBtn.onclick = () => { if (tokenClient) tokenClient.requestAccessToken(); };
-  gSignInBtn.addEventListener('touchend', (e) => { e.preventDefault(); if (tokenClient) tokenClient.requestAccessToken(); });
+  const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+    '?client_id=' + GOOGLE_CLIENT_ID +
+    '&redirect_uri=' + encodeURIComponent('https://sirwilderon.github.io/my-assistant/') +
+    '&response_type=token' +
+    '&scope=' + encodeURIComponent('https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/tasks') +
+    '&prompt=select_account';
+  gSignInBtn.onclick = () => { window.location.href = googleAuthUrl; };
+  gSignInBtn.addEventListener('touchend', (e) => { e.preventDefault(); window.location.href = googleAuthUrl; });
 }
 
 function updateGoogleUI(connected) {
