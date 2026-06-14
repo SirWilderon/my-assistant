@@ -2053,13 +2053,34 @@ async function checkTodoVoiceCommand(text) {
     const match = text.match(pattern);
     if (match) {
       const taskTitle = match[1].trim();
-      const listName = await addTodoTask(taskTitle);
-      if (listName) {
-        addBubble('ai', '✅ Added to To Do list "' + listName + '": "' + taskTitle + '"');
-      } else {
-        addBubble('ai', '⚠️ Microsoft To Do token expired. Tap 📋TD → Connect Microsoft To Do to reconnect.');
+      // Add to Google Tasks (works reliably from browser)
+      try {
+        if (!googleAccessToken) {
+          addBubble('ai', '⚠️ Please connect Google first — tap the 📅 Calendar button to sign in.');
+          return true;
+        }
+        // Get default task list first
+        const listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=1', {
+          headers: { Authorization: 'Bearer ' + googleAccessToken }
+        });
+        const listsData = await listsRes.json();
+        const listId = listsData.items?.[0]?.id || '@default';
+        
+        const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + listId + '/tasks', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: taskTitle })
+        });
+        const task = await res.json();
+        if (task.id) {
+          addBubble('ai', '✅ Added to Google Tasks: "' + taskTitle + '"');
+        } else {
+          addBubble('ai', '❌ Could not add task: ' + (task.error?.message || 'Unknown error'));
+        }
+      } catch(e) {
+        addBubble('ai', '❌ Error adding task: ' + e.message);
       }
-      return true; // Always return true so Gemini does not handle it
+      return true;
     }
   }
   return false;
