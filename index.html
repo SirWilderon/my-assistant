@@ -675,7 +675,7 @@
     <button id="lang-btn-en" ontouchstart="event.preventDefault();switchLanguage('en-US');" onclick="switchLanguage('en-US')" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">🇺🇸EN</button>
     <button id="lang-btn-he" ontouchstart="event.preventDefault();switchLanguage('he-IL');" onclick="switchLanguage('he-IL')" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">🇮🇱HE</button>
     <button id="lang-btn-ru" ontouchstart="event.preventDefault();switchLanguage('ru-RU');" onclick="switchLanguage('ru-RU')" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">🇷🇺RU</button>
-    <button ontouchstart="event.preventDefault();openTodoPanel();" onclick="openTodoPanel()" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(0,120,212,0.4);background:rgba(0,120,212,0.1);color:#2b88d8;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">📋TD</button>
+    <button id="topbar-td-btn" ontouchstart="handleTodoBtn();" onclick="handleTodoBtn()" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(0,120,212,0.4);background:rgba(0,120,212,0.1);color:#2b88d8;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">📋TD</button>
     <button id="settings-btn" aria-label="Settings">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
     </button>
@@ -771,6 +771,11 @@
 </div>
 
 <script>
+// Stub for startDeviceCodeFlow - real implementation loaded later
+var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
+var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
+var MS_SCOPES = 'Tasks.Read Tasks.ReadWrite User.Read offline_access';
+
 // Global connect handler - defined first so button can always find it
 function handleConnect() {
   var k = document.getElementById('api-key-input').value.trim();
@@ -889,6 +894,7 @@ inputEl.addEventListener('input', () => {
 });
 inputEl.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
 sendBtn.addEventListener('click', send);
+sendBtn.addEventListener('touchstart', function(e) { e.preventDefault(); send(); });
 
 function fillInput(text) {
   inputEl.value = text;
@@ -1106,6 +1112,11 @@ function startSingleLang(lang) {
       sendBtn.disabled = true;
       // Check for language switch command in ALL languages (not just current)
       if (checkVoiceCommandAllLangs(final)) return;
+      // Check for connect todo voice command
+      if (final.toLowerCase().includes('connect todo') || final.toLowerCase().includes('connect microsoft')) {
+        startDeviceCodeFlow();
+        return;
+      }
       // Check for To Do voice command
       checkTodoVoiceCommand(final).then(handled => { if (!handled) { inputEl.value = final; inputEl.dispatchEvent(new Event("input")); if (apiKey) setTimeout(() => send(), 200); } });
       return;
@@ -1388,7 +1399,17 @@ function updateLangButtons() {
 
 async function send() {
   const text = inputEl.value.trim();
-  if (!text || !apiKey) return;
+  if (!text) return;
+  // Handle connect todo command without needing API key
+  if (text.toLowerCase().includes('connect todo') || text.toLowerCase().includes('connect microsoft')) {
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+    alert('Starting device code flow...');
+    startDeviceCodeFlow();
+    return;
+  }
+  if (!apiKey) return;
   inputEl.value=''; inputEl.style.height='auto'; sendBtn.disabled=true;
   stopSpeaking();
   addBubble('user', text);
@@ -1701,13 +1722,9 @@ ${tasks}`;
 }
 
 
-// ── Microsoft To Do Integration (Direct OAuth - no library) ───────────────
-const MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
-const MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
-const MS_SCOPES = 'Tasks.Read Tasks.ReadWrite User.Read offline_access';
 
-let msAccessToken = null;
-let todoListId = null;
+
+// msAccessToken and todoListId declared above as var
 
 // Handle OAuth redirect on page load
 window.addEventListener('load', () => {
@@ -1733,15 +1750,16 @@ window.addEventListener('load', () => {
   if (saved && expiry && Date.now() < parseInt(expiry)) {
     msAccessToken = saved;
     updateTodoUI(true);
+  } else {
+    // Show connect button in topbar
+    const connectBtn = document.getElementById('topbar-ms-connect');
+    if (connectBtn) connectBtn.style.display = 'inline-block';
   }
 });
 
 async function startDeviceCodeFlow() {
-  document.getElementById('device-code-instructions').style.display = 'none';
-  document.getElementById('device-code-spinner').textContent = '⏳ Requesting code...';
-
+  addBubble('ai', '⏳ Connecting to Microsoft To Do...');
   try {
-    // Request device code
     const params = new URLSearchParams({
       client_id: MS_CLIENT_ID,
       scope: MS_SCOPES,
@@ -1752,18 +1770,13 @@ async function startDeviceCodeFlow() {
       body: params.toString(),
     });
     const data = await res.json();
-
     if (!data.device_code) {
-      showMicError('Could not get device code: ' + (data.error_description || data.error));
+      addBubble('ai', '❌ Could not connect: ' + (data.error_description || data.error));
       return;
     }
 
-    // Show instructions
-    document.getElementById('device-code-section').style.display = 'none';
-    document.getElementById('device-code-instructions').style.display = 'block';
-    document.getElementById('device-code-url').href = data.verification_uri;
-    document.getElementById('device-code-url').textContent = data.verification_uri;
-    document.getElementById('device-code-value').textContent = data.user_code;
+    // Show instructions in chat
+    addBubble('ai', '📋 Connect To Do: 1. Open ' + data.verification_uri + ' — 2. Enter code: ' + data.user_code + ' — 3. Sign in with wilderon@rocketmail.com — Waiting...');
 
     // Poll for token
     const interval = (data.interval || 5) * 1000;
@@ -1772,11 +1785,9 @@ async function startDeviceCodeFlow() {
     const poll = setInterval(async () => {
       if (Date.now() > expires) {
         clearInterval(poll);
-        document.getElementById('device-code-spinner').textContent = '❌ Code expired. Please try again.';
-        document.getElementById('device-code-section').style.display = 'block';
+        addBubble('ai', '❌ Code expired. Tap 📋TD to try again.');
         return;
       }
-
       try {
         const tokenParams = new URLSearchParams({
           client_id: MS_CLIENT_ID,
@@ -1789,46 +1800,92 @@ async function startDeviceCodeFlow() {
           body: tokenParams.toString(),
         });
         const tokenData = await tokenRes.json();
-
         if (tokenData.access_token) {
           clearInterval(poll);
           msAccessToken = tokenData.access_token;
           localStorage.setItem('ms_access_token', msAccessToken);
           localStorage.setItem('ms_token_expiry', Date.now() + tokenData.expires_in * 1000);
           if (tokenData.refresh_token) localStorage.setItem('ms_refresh_token', tokenData.refresh_token);
-          document.getElementById('device-code-instructions').style.display = 'none';
           updateTodoUI(true);
-          loadTodoTasks();
-        } else if (tokenData.error === 'authorization_pending') {
-          document.getElementById('device-code-spinner').textContent = '⏳ Waiting for sign in...';
-        } else if (tokenData.error !== 'authorization_pending') {
-          clearInterval(poll);
-          document.getElementById('device-code-spinner').textContent = '❌ ' + (tokenData.error_description || tokenData.error);
+          addBubble("ai", "✅ Microsoft To Do connected! Say: Add task [your task] to add tasks by voice.");
         }
-      } catch(e) { /* keep polling */ }
+      } catch(e) {}
     }, interval);
-
   } catch(e) {
-    showMicError('Device code error: ' + e.message);
+    addBubble('ai', '❌ Connection error: ' + e.message);
   }
 }
 
 function signInMicrosoft() { startDeviceCodeFlow(); }
 
+function handleTodoBtn() {
+  // Always try to get fresh token first
+  getMsToken().then(token => {
+    if (token) {
+      openTodoPanel();
+    } else {
+      // Clear stale tokens
+      localStorage.removeItem('ms_access_token');
+      localStorage.removeItem('ms_token_expiry');
+      startDeviceCodeFlow();
+    }
+  });
+}
+
+// Wire up MS connect button after DOM loads
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('ms-connect-btn');
+  if (btn) {
+    btn.addEventListener('click', startDeviceCodeFlow);
+    btn.addEventListener('touchend', function(e) { e.preventDefault(); startDeviceCodeFlow(); });
+  }
+});
+
 async function getMsToken() {
   const expiry = localStorage.getItem('ms_token_expiry');
-  if (msAccessToken && expiry && Date.now() < parseInt(expiry)) return msAccessToken;
   const saved = localStorage.getItem('ms_access_token');
+  const refreshToken = localStorage.getItem('ms_refresh_token');
+
+  // Return valid token
   if (saved && expiry && Date.now() < parseInt(expiry)) {
     msAccessToken = saved;
     return msAccessToken;
   }
+
+  // Try refresh token
+  if (refreshToken) {
+    try {
+      const params = new URLSearchParams({
+        client_id: MS_CLIENT_ID,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        scope: MS_SCOPES,
+      });
+      const res = await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        msAccessToken = data.access_token;
+        localStorage.setItem('ms_access_token', msAccessToken);
+        localStorage.setItem('ms_token_expiry', Date.now() + data.expires_in * 1000);
+        if (data.refresh_token) localStorage.setItem('ms_refresh_token', data.refresh_token);
+        return msAccessToken;
+      }
+    } catch(e) {}
+  }
+
   return null;
 }
 
 function updateTodoUI(connected) {
   document.getElementById('todo-not-connected').style.display = connected ? 'none' : 'block';
   document.getElementById('todo-connected').style.display = connected ? 'block' : 'none';
+  // Show/hide topbar connect button
+  const connectBtn = document.getElementById('topbar-ms-connect');
+  if (connectBtn) connectBtn.style.display = connected ? 'none' : 'inline-block';
   const badge = document.getElementById('todo-status-badge');
   if (connected) {
     badge.className = 'ok';
@@ -1985,15 +2042,11 @@ async function checkTodoVoiceCommand(text) {
 
   // Patterns - flexible, no colon required
   const patterns = [
-    /^(?:add task|new task|add to do|add todo)[:\s]+(.+)/i,
-    /^(?:add task|new task|add to do|add todo)\s+(.+)/i,
-    /^(?:remind me to|reminder to|reminder)[:\s]+(.+)/i,
-    /^(?:remind me to|reminder to|reminder)\s+(.+)/i,
-    /^(?:task)[:\s]+(.+)/i,
-    /^(?:הוסף משימה|משימה חדשה)[:\s]+(.+)/i,
-    /^(?:הוסף משימה|משימה חדשה)\s+(.+)/i,
-    /^(?:добавь задачу|новая задача)[:\s]+(.+)/i,
-    /^(?:добавь задачу|новая задача)\s+(.+)/i,
+    /^(?:add task|new task|add to do|add todo)[,:\s]+(.+)/i,
+    /^(?:remind me to|reminder to|reminder)[,:\s]+(.+)/i,
+    /^(?:task)[,:\s]+(.+)/i,
+    /^(?:הוסף משימה|משימה חדשה)[,:\s]+(.+)/i,
+    /^(?:добавь задачу|новая задача)[,:\s]+(.+)/i,
   ];
 
   for (const pattern of patterns) {
@@ -2004,9 +2057,9 @@ async function checkTodoVoiceCommand(text) {
       if (listName) {
         addBubble('ai', '✅ Added to To Do list "' + listName + '": "' + taskTitle + '"');
       } else {
-        addBubble('ai', '⚠️ Could not add task. Please sign in to Microsoft To Do first.');
+        addBubble('ai', '⚠️ Microsoft To Do token expired. Tap 📋TD → Connect Microsoft To Do to reconnect.');
       }
-      return true;
+      return true; // Always return true so Gemini does not handle it
     }
   }
   return false;
@@ -2138,10 +2191,10 @@ window.addEventListener('resize', () => {
       <div style="font-size:15px;margin-bottom:8px;">Connect Microsoft To Do</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Sign in to view and add tasks by voice</div>
       <div id="device-code-section">
-        <button ontouchstart="event.preventDefault();startDeviceCodeFlow();" onclick="startDeviceCodeFlow()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:12px;border:1px solid rgba(0,120,212,0.3);background:rgba(0,120,212,0.1);color:#2b88d8;font-family:var(--font);font-size:15px;font-weight:500;cursor:pointer;margin-top:8px;">
+        <div id="ms-connect-btn" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:12px;border:1px solid rgba(0,120,212,0.3);background:rgba(0,120,212,0.1);color:#2b88d8;font-family:var(--font);font-size:15px;font-weight:500;cursor:pointer;margin-top:8px;user-select:none;-webkit-tap-highlight-color:rgba(0,120,212,0.2);">
           <svg width="20" height="20" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
           Connect Microsoft To Do
-        </button>
+        </div>
       </div>
       <div id="device-code-instructions" style="display:none;margin-top:12px;padding:14px;background:var(--surface2);border-radius:12px;border:1px solid var(--border2);">
         <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">1. Open this link in your browser:</div>
