@@ -2089,6 +2089,7 @@ async function checkTodoVoiceCommand(text) {
           headers: { Authorization: 'Bearer ' + googleAccessToken }
         });
         const listsData = await listsRes.json();
+        const listName = listsData.items?.[0]?.title || 'Unknown';
         const listId = listsData.items?.[0]?.id || '@default';
         
         const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + listId + '/tasks', {
@@ -2098,9 +2099,9 @@ async function checkTodoVoiceCommand(text) {
         });
         const task = await res.json();
         if (task.id) {
-          addBubble('ai', '✅ Added to Google Tasks: "' + taskTitle + '"');
+          addBubble('ai', '✅ Added to Google Tasks list "' + listName + '": "' + taskTitle + '" (ID: ' + task.id.substring(0,8) + ')');
         } else {
-          addBubble('ai', '❌ Could not add task: ' + (task.error?.message || 'Unknown error'));
+          addBubble('ai', '❌ Could not add task: ' + JSON.stringify(task.error || task));
         }
       } catch(e) {
         addBubble('ai', '❌ Error adding task: ' + e.message);
