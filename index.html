@@ -1485,12 +1485,7 @@ window.addEventListener('load', () => {
   const expiry = localStorage.getItem('google_token_expiry');
   if (saved && expiry && Date.now() < parseInt(expiry)) {
     googleAccessToken = saved;
-    // Defer UI update until after page fully loads
-    setTimeout(() => {
-      updateGoogleUI(true);
-      loadCalendarEvents();
-      loadTasks();
-    }, 1000);
+    updateGoogleUI(true);
   }
 });
 
@@ -2102,8 +2097,16 @@ async function checkTodoVoiceCommand(text) {
       const taskTitle = match[1].trim();
       // Add to Google Tasks (works reliably from browser)
       try {
+        // Try localStorage fallback if variable not set
         if (!googleAccessToken) {
-          addBubble('ai', '⚠️ Please connect Google first — tap the 📅 Calendar button to sign in.');
+          const saved = localStorage.getItem('google_token');
+          const expiry = localStorage.getItem('google_token_expiry');
+          if (saved && expiry && Date.now() < parseInt(expiry)) {
+            googleAccessToken = saved;
+          }
+        }
+        if (!googleAccessToken) {
+          addBubble('ai', '⚠️ Please connect Google first — tap the 📅G button to sign in.');
           return true;
         }
         // Get default task list first
