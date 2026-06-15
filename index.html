@@ -1485,7 +1485,12 @@ window.addEventListener('load', () => {
   const expiry = localStorage.getItem('google_token_expiry');
   if (saved && expiry && Date.now() < parseInt(expiry)) {
     googleAccessToken = saved;
-    updateGoogleUI(true);
+    // Defer UI update until after page fully loads
+    setTimeout(() => {
+      updateGoogleUI(true);
+      loadCalendarEvents();
+      loadTasks();
+    }, 1000);
   }
 });
 
