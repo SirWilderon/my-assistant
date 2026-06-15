@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect Google</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; background: #0f1117; color: #e8eaf0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.card { background: #181c27; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; text-align: center; }
+h2 { margin-bottom: 12px; }
+p { color: #7a7f94; font-size: 14px; margin-bottom: 20px; }
+.status { font-size: 16px; margin: 20px 0; }
+a { color: #4f8ef7; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>📅 Connecting Google...</h2>
+  <p id="msg">Please wait...</p>
+  <div class="status" id="status"></div>
+</div>
+<script>
+// Read token from URL hash
+const hash = window.location.hash;
+if (hash && hash.includes('access_token')) {
+  const params = new URLSearchParams(hash.substring(1));
+  const token = params.get('access_token');
+  const expiresIn = parseInt(params.get('expires_in') || '3600');
+
+  if (token) {
+    // Save to localStorage
+    localStorage.setItem('google_token', token);
+    localStorage.setItem('google_token_expiry', String(Date.now() + expiresIn * 1000));
+    document.getElementById('status').innerHTML = '✅ Google connected!<br><br><a href="https://sirwilderon.github.io/my-assistant/">← Back to Assistant</a>';
+    document.getElementById('msg').textContent = 'Token saved. Redirecting back...';
+    setTimeout(() => {
+      window.location.href = 'https://sirwilderon.github.io/my-assistant/';
+    }, 1500);
+  } else {
+    document.getElementById('status').textContent = '❌ No token found in URL.';
+  }
+} else {
+  // No token - start auth flow
+  const CLIENT_ID = '355427855923-bgf2lpdhhnsk8dqdjut8ihq3f1lj18d1.apps.googleusercontent.com';
+  const REDIRECT = encodeURIComponent('https://sirwilderon.github.io/my-assistant/google-auth.html');
+  const SCOPES = encodeURIComponent('https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/tasks');
+  const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + CLIENT_ID +
+    '&redirect_uri=' + REDIRECT +
+    '&response_type=token' +
+    '&scope=' + SCOPES +
+    '&prompt=select_account';
+  document.getElementById('msg').textContent = 'Redirecting to Google sign in...';
+  setTimeout(() => { window.location.href = authUrl; }, 500);
+}
+</script>
+</body>
+</html>
