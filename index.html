@@ -773,7 +773,6 @@
 </div>
 
 <script>
-alert('SCRIPT START: ' + window.location.search);
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
@@ -2206,28 +2205,29 @@ async function reciteTodaysTasks() {
 }
 
 // Check if launched with recite param (from home screen icon)
-window.addEventListener('load', () => {
+function checkReciteParam() {
   const params = new URLSearchParams(window.location.search);
-  const reciteParam = params.get('recite');
-  alert('DEBUG: search=' + window.location.search + ' | recite=' + reciteParam);
-  if (reciteParam === 'true') {
+  if (params.get('recite') === 'true' && !window.__reciteBannerShown) {
+    window.__reciteBannerShown = true;
     showReciteBanner();
   }
-});
+}
+window.addEventListener('load', checkReciteParam);
+document.addEventListener('DOMContentLoaded', checkReciteParam);
+checkReciteParam();
 
 function showReciteBanner() {
   const banner = document.createElement('div');
   banner.id = 'recite-banner';
-  banner.style = 'position:fixed;top:60px;left:16px;right:16px;z-index:200;background:var(--accent);color:white;padding:14px 18px;border-radius:14px;text-align:center;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+  banner.setAttribute('style', 'position:fixed !important;top:70px !important;left:16px !important;right:16px !important;z-index:99999 !important;background:#4f8ef7 !important;color:white !important;padding:14px 18px !important;border-radius:14px !important;text-align:center !important;font-size:15px !important;font-weight:600 !important;cursor:pointer !important;box-shadow:0 4px 20px rgba(0,0,0,0.5) !important;display:block !important;visibility:visible !important;opacity:1 !important;');
   banner.textContent = '🔊 Tap here to hear todays tasks';
   banner.onclick = banner.ontouchstart = function(e) {
     e.preventDefault();
     banner.remove();
     reciteTodaysTasks();
   };
-  document.body.appendChild(banner);
-  // Auto-remove after 10 seconds if not tapped
-  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 10000);
+  document.documentElement.appendChild(banner);
+  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 15000);
 }
 
 // Scroll to bottom on resize (keyboard open/close)
