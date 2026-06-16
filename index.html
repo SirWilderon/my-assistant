@@ -2235,6 +2235,7 @@ document.addEventListener('DOMContentLoaded', checkReciteParam);
 checkReciteParam();
 
 function showReciteBanner() {
+  document.getElementById('debug-search-display').textContent += ' | BANNER FN CALLED';
   const banner = document.createElement('div');
   banner.id = 'recite-banner';
   banner.setAttribute('style', 'position:fixed !important;top:70px !important;left:16px !important;right:16px !important;z-index:99999 !important;background:#4f8ef7 !important;color:white !important;padding:14px 18px !important;border-radius:14px !important;text-align:center !important;font-size:15px !important;font-weight:600 !important;cursor:pointer !important;box-shadow:0 4px 20px rgba(0,0,0,0.5) !important;display:block !important;visibility:visible !important;opacity:1 !important;');
