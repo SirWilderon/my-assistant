@@ -2208,9 +2208,25 @@ async function reciteTodaysTasks() {
 window.addEventListener('load', () => {
   const params = new URLSearchParams(window.location.search);
   if (params.get('recite') === 'true') {
-    setTimeout(reciteTodaysTasks, 1500);
+    // Show a tap-to-hear banner since mobile blocks auto-speech
+    showReciteBanner();
   }
 });
+
+function showReciteBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'recite-banner';
+  banner.style = 'position:fixed;top:60px;left:16px;right:16px;z-index:200;background:var(--accent);color:white;padding:14px 18px;border-radius:14px;text-align:center;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+  banner.textContent = '🔊 Tap here to hear todays tasks';
+  banner.onclick = banner.ontouchstart = function(e) {
+    e.preventDefault();
+    banner.remove();
+    reciteTodaysTasks();
+  };
+  document.body.appendChild(banner);
+  // Auto-remove after 10 seconds if not tapped
+  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 10000);
+}
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
