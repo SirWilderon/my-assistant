@@ -610,7 +610,21 @@
 </head>
 <body>
 <div id="debug-search-display">LOADING...</div>
-<script>document.getElementById('debug-search-display').textContent = 'SEARCH: [' + window.location.search + '] HASH: [' + window.location.hash + ']';</script>
+<script>
+document.getElementById('debug-search-display').textContent = 'SEARCH: [' + window.location.search + '] HASH: [' + window.location.hash + ']';
+// Unregister any stuck service workers that might be intercepting requests
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for (let registration of registrations) {
+      registration.unregister();
+      document.getElementById('debug-search-display').textContent += ' | SW UNREGISTERED';
+    }
+    if (registrations.length === 0) {
+      document.getElementById('debug-search-display').textContent += ' | NO SW FOUND';
+    }
+  });
+}
+</script>
 
 <!-- Desktop sidebar (hidden on mobile via CSS) -->
 <nav id="sidebar-desktop" style="display:none;">
