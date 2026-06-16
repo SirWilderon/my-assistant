@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
 <script>document.title = 'PA - search:[' + window.location.search + ']';</script>
+<style>#debug-search-display{position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:14px;padding:8px;z-index:999999;text-align:center;font-family:monospace;}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -608,6 +609,8 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+<div id="debug-search-display">LOADING...</div>
+<script>document.getElementById('debug-search-display').textContent = 'SEARCH: [' + window.location.search + '] HASH: [' + window.location.hash + ']';</script>
 
 <!-- Desktop sidebar (hidden on mobile via CSS) -->
 <nav id="sidebar-desktop" style="display:none;">
