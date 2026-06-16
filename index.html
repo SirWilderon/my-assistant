@@ -2207,8 +2207,9 @@ async function reciteTodaysTasks() {
 // Check if launched with recite param (from home screen icon)
 window.addEventListener('load', () => {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('recite') === 'true') {
-    // Show a tap-to-hear banner since mobile blocks auto-speech
+  const reciteParam = params.get('recite');
+  alert('DEBUG: search=' + window.location.search + ' | recite=' + reciteParam);
+  if (reciteParam === 'true') {
     showReciteBanner();
   }
 });
