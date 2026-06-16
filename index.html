@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2148,6 +2149,68 @@ async function checkTodoVoiceCommand(text) {
   }
   return false;
 }
+
+
+// ── Auto-recite tasks on home screen launch ────────────────────────────────
+async function reciteTodaysTasks() {
+  try {
+    const token = localStorage.getItem('google_token');
+    const expiry = localStorage.getItem('google_token_expiry');
+    if (!token || !expiry || Date.now() > parseInt(expiry)) {
+      speak('Please open the calendar button to connect Google first.');
+      return;
+    }
+    googleAccessToken = token;
+
+    const listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const listsData = await listsRes.json();
+    const lists = listsData.items || [];
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    let dueTasks = [];
+
+    for (const list of lists) {
+      const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + list.id + '/tasks?showCompleted=false', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const data = await res.json();
+      (data.items || []).forEach(t => {
+        if (t.due) {
+          const dueDate = new Date(t.due);
+          dueDate.setHours(0,0,0,0);
+          if (dueDate.getTime() <= today.getTime()) {
+            dueTasks.push(t.title);
+          }
+        }
+      });
+    }
+
+    if (dueTasks.length === 0) {
+      speak('You have no tasks due today. Great job staying on top of things!');
+      addBubble('ai', '✅ No tasks due today!');
+    } else {
+      const taskList = dueTasks.join(', ');
+      const message = dueTasks.length === 1
+        ? 'You have one task due today: ' + dueTasks[0]
+        : 'You have ' + dueTasks.length + ' tasks due today: ' + taskList;
+      speak(message);
+      addBubble('ai', '📋 Tasks due today:\n' + dueTasks.map(t => '• ' + t).join('\n'));
+    }
+  } catch(e) {
+    console.error('Recite error:', e);
+  }
+}
+
+// Check if launched with recite param (from home screen icon)
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('recite') === 'true') {
+    setTimeout(reciteTodaysTasks, 1500);
+  }
+});
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
