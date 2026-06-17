@@ -1045,7 +1045,13 @@ function loadVoices() {
   });
 }
 speechSynthesis.onvoiceschanged = loadVoices;
-loadVoices();
+document.getElementById('debug-search-display').textContent += ' | PRE-LOADVOICES';
+try {
+  loadVoices();
+  document.getElementById('debug-search-display').textContent += ' | POST-LOADVOICES';
+} catch(eLV) {
+  document.getElementById('debug-search-display').textContent += ' | LOADVOICES-FAIL:' + eLV.message;
+}
 
 ['voice-select-m','voice-select-d'].forEach(id => {
   const el = document.getElementById(id);
@@ -1095,6 +1101,7 @@ const isFileProtocol = location.protocol === 'file:';
 const micModal = document.getElementById('mic-modal-overlay');
 document.getElementById('modal-dismiss-btn').onclick = () => micModal.classList.remove('open');
 document.getElementById('modal-retry-btn').onclick = () => { micModal.classList.remove('open'); startRecognition(); };
+document.getElementById('debug-search-display').textContent += ' | POST-MODAL';
 
 function showMicError(msg) {
   voiceStatus.classList.add('show');
