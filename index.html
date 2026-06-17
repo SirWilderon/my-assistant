@@ -845,8 +845,12 @@ const settingsSheet   = document.getElementById('settings-sheet');
 document.getElementById('debug-search-display').textContent += ' | GOT-SHEET:' + (settingsSheet ? 'OK' : 'NULL');
 document.getElementById('settings-btn').onclick = openSettings;
 document.getElementById('debug-search-display').textContent += ' | POST-BTN-CLICK';
-settingsOverlay.onclick = closeSettings;
-document.getElementById('debug-search-display').textContent += ' | POST-OVERLAY-CLICK';
+try {
+  settingsOverlay.onclick = closeSettings;
+  document.getElementById('debug-search-display').textContent += ' | POST-OVERLAY-CLICK';
+} catch(errX) {
+  document.getElementById('debug-search-display').textContent += ' | OVERLAY-ERROR: ' + errX.message;
+}
 function openSettings() { settingsOverlay.classList.add('open'); settingsSheet.classList.add('open'); }
 function closeSettings() { settingsOverlay.classList.remove('open'); settingsSheet.classList.remove('open'); }
 
