@@ -791,6 +791,7 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <script>
+document.getElementById('debug-search-display').textContent += ' | MAIN SCRIPT STARTED';
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
@@ -2225,9 +2226,17 @@ async function reciteTodaysTasks() {
 // Check if launched with recite param (from home screen icon)
 function checkReciteParam() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('recite') === 'true' && !window.__reciteBannerShown) {
+  const reciteVal = params.get('recite');
+  const dbgEl = document.getElementById('debug-search-display');
+  if (dbgEl) dbgEl.textContent += ' | CHECK: recite=' + reciteVal + ' shown=' + window.__reciteBannerShown;
+  if (reciteVal === 'true' && !window.__reciteBannerShown) {
     window.__reciteBannerShown = true;
-    showReciteBanner();
+    if (dbgEl) dbgEl.textContent += ' | CALLING BANNER NOW';
+    try {
+      showReciteBanner();
+    } catch(err) {
+      if (dbgEl) dbgEl.textContent += ' | ERROR: ' + err.message;
+    }
   }
 }
 window.addEventListener('load', checkReciteParam);
