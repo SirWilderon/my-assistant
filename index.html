@@ -838,10 +838,15 @@ const voiceStatus     = document.getElementById('voice-status');
 const voiceStatusText = document.getElementById('voice-status-text');
 
 // Settings sheet
+document.getElementById('debug-search-display').textContent += ' | PRE-OVERLAY';
 const settingsOverlay = document.getElementById('settings-overlay');
+document.getElementById('debug-search-display').textContent += ' | GOT-OVERLAY:' + (settingsOverlay ? 'OK' : 'NULL');
 const settingsSheet   = document.getElementById('settings-sheet');
+document.getElementById('debug-search-display').textContent += ' | GOT-SHEET:' + (settingsSheet ? 'OK' : 'NULL');
 document.getElementById('settings-btn').onclick = openSettings;
+document.getElementById('debug-search-display').textContent += ' | POST-BTN-CLICK';
 settingsOverlay.onclick = closeSettings;
+document.getElementById('debug-search-display').textContent += ' | POST-OVERLAY-CLICK';
 function openSettings() { settingsOverlay.classList.add('open'); settingsSheet.classList.add('open'); }
 function closeSettings() { settingsOverlay.classList.remove('open'); settingsSheet.classList.remove('open'); }
 
