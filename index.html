@@ -5,8 +5,6 @@
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
-<script>document.title = 'PA - search:[' + window.location.search + ']';</script>
-<style>#debug-search-display{position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:10px;padding:4px;z-index:999999;text-align:left;font-family:monospace;max-height:120px;overflow-y:auto;white-space:normal;word-break:break-all;line-height:1.4;}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -609,19 +607,15 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-<div id="debug-search-display">LOADING...</div>
 <script>
-document.getElementById('debug-search-display').textContent = 'SEARCH: [' + window.location.search + '] HASH: [' + window.location.hash + ']';
 // Unregister any stuck service workers that might be intercepting requests
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(function(registrations) {
     for (let registration of registrations) {
       registration.unregister();
-      document.getElementById('debug-search-display').textContent += ' | SW UNREGISTERED';
-    }
+          }
     if (registrations.length === 0) {
-      document.getElementById('debug-search-display').textContent += ' | NO SW FOUND';
-    }
+          }
   });
 }
 </script>
@@ -791,14 +785,10 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <script>
-document.getElementById('debug-search-display').textContent += ' | MAIN SCRIPT STARTED';
-document.getElementById('debug-search-display').textContent += ' | LINE2';
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
-document.getElementById('debug-search-display').textContent += ' | LINE5';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
 var MS_SCOPES = 'Tasks.Read Tasks.ReadWrite User.Read offline_access';
-document.getElementById('debug-search-display').textContent += ' | LINE8';
 
 // Global connect handler - defined first so button can always find it
 function handleConnect() {
@@ -838,19 +828,10 @@ const voiceStatus     = document.getElementById('voice-status');
 const voiceStatusText = document.getElementById('voice-status-text');
 
 // Settings sheet
-document.getElementById('debug-search-display').textContent += ' | PRE-OVERLAY';
 const settingsOverlay = document.getElementById('settings-overlay');
-document.getElementById('debug-search-display').textContent += ' | GOT-OVERLAY:' + (settingsOverlay ? 'OK' : 'NULL');
 const settingsSheet   = document.getElementById('settings-sheet');
-document.getElementById('debug-search-display').textContent += ' | GOT-SHEET:' + (settingsSheet ? 'OK' : 'NULL');
 document.getElementById('settings-btn').onclick = openSettings;
-document.getElementById('debug-search-display').textContent += ' | POST-BTN-CLICK';
-try {
-  settingsOverlay.onclick = closeSettings;
-  document.getElementById('debug-search-display').textContent += ' | POST-OVERLAY-CLICK';
-} catch(errX) {
-  document.getElementById('debug-search-display').textContent += ' | OVERLAY-ERROR: ' + errX.message;
-}
+settingsOverlay.onclick = closeSettings;
 function openSettings() { settingsOverlay.classList.add('open'); settingsSheet.classList.add('open'); }
 function closeSettings() { settingsOverlay.classList.remove('open'); settingsSheet.classList.remove('open'); }
 
@@ -875,22 +856,17 @@ function setConnected(key) {
 }
 
 // Pre-fill saved key and auto-connect
-document.getElementById('debug-search-display').textContent += ' | PRE-LANGBTN';
 updateLangButtons();
-document.getElementById('debug-search-display').textContent += ' | POST-LANGBTN';
 if (apiKey) {
   document.getElementById('api-key-input').value = apiKey;
   setConnected(apiKey);
 }
-document.getElementById('debug-search-display').textContent += ' | POST-AUTOCONNECT';
 
 document.getElementById('save-key-btn').onclick = () => {
   const k = document.getElementById('api-key-input').value.trim();
   if (k) setConnected(k);
 };
-document.getElementById('debug-search-display').textContent += ' | M1';
 document.getElementById('api-key-input').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('save-key-btn').click(); });
-document.getElementById('debug-search-display').textContent += ' | M2';
 
 // Clipboard paste buttons
 async function pasteFromClipboard(inputId) {
@@ -908,53 +884,37 @@ async function pasteFromClipboard(inputId) {
     alert('Long-press the text field and tap Paste to enter your API key.');
   }
 }
-document.getElementById('debug-search-display').textContent += ' | M3';
 
 document.getElementById('paste-key-btn').onclick = () => pasteFromClipboard('api-key-input');
-document.getElementById('debug-search-display').textContent += ' | M4';
 document.getElementById('sheet-paste-btn').onclick = () => pasteFromClipboard('sheet-api-input');
-document.getElementById('debug-search-display').textContent += ' | M5';
 document.getElementById('sheet-save-key').onclick = () => {
   const k = document.getElementById('sheet-api-input').value.trim();
   if (k) setConnected(k);
 };
-document.getElementById('debug-search-display').textContent += ' | M6';
-document.getElementById('debug-search-display').textContent += ' | INPUTEL:' + (typeof inputEl !== 'undefined' && inputEl ? 'OK' : 'NULL');
 
 // Clear chat
-try {
 document.getElementById('clear-btn-m').onclick = () => {
   history = []; stopSpeaking();
   messagesEl.innerHTML = '';
   addBubble('ai', "Chat cleared! What would you like to work on?");
   closeSettings();
 };
-document.getElementById('debug-search-display').textContent += ' | M7';
-} catch(e7) { document.getElementById('debug-search-display').textContent += ' | M7-FAIL:' + e7.message; }
 
 // ── Input ──────────────────────────────────────────────────────────────────
-try {
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
   inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
   sendBtn.disabled = !inputEl.value.trim() || !apiKey;
 });
-document.getElementById('debug-search-display').textContent += ' | M8';
 inputEl.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-document.getElementById('debug-search-display').textContent += ' | M9';
 sendBtn.addEventListener('click', send);
-document.getElementById('debug-search-display').textContent += ' | M10';
 sendBtn.addEventListener('touchstart', function(e) { e.preventDefault(); send(); });
-document.getElementById('debug-search-display').textContent += ' | M11';
-} catch(e8) { document.getElementById('debug-search-display').textContent += ' | M8-FAIL:' + e8.message; }
-document.getElementById('debug-search-display').textContent += ' | M11b';
 
 function fillInput(text) {
   inputEl.value = text;
   inputEl.dispatchEvent(new Event('input'));
   inputEl.focus();
 }
-document.getElementById('debug-search-display').textContent += ' | M12';
 
 // ── Voice toggles (sync mobile ↔ desktop) ─────────────────────────────────
 function syncToggles() {
@@ -976,7 +936,6 @@ function syncToggles() {
   const el = document.getElementById(id);
   if (el) el.onclick = () => { autoSend = !autoSend; syncToggles(); };
 });
-document.getElementById('debug-search-display').textContent += ' | M13';
 
 // Rate sliders
 // ── Language selector sync ─────────────────────────────────────────────────
@@ -999,7 +958,6 @@ function syncLangSelectors() {
     syncLangSelectors();
   });
 });
-document.getElementById('debug-search-display').textContent += ' | M14';
 
 ['rate-slider-m','rate-slider-d'].forEach(id => {
   const el = document.getElementById(id);
@@ -1045,13 +1003,7 @@ function loadVoices() {
   });
 }
 speechSynthesis.onvoiceschanged = loadVoices;
-document.getElementById('debug-search-display').textContent += ' | PRE-LOADVOICES';
-try {
-  loadVoices();
-  document.getElementById('debug-search-display').textContent += ' | POST-LOADVOICES';
-} catch(eLV) {
-  document.getElementById('debug-search-display').textContent += ' | LOADVOICES-FAIL:' + eLV.message;
-}
+loadVoices();
 
 ['voice-select-m','voice-select-d'].forEach(id => {
   const el = document.getElementById(id);
@@ -1061,7 +1013,6 @@ try {
     ['voice-select-m','voice-select-d'].forEach(sid => { const s = document.getElementById(sid); if (s && s!==el) s.value = el.value; });
   });
 });
-document.getElementById('debug-search-display').textContent += ' | POST-VOICESELECT';
 
 // ── TTS ────────────────────────────────────────────────────────────────────
 function speak(text, bubble) {
@@ -1091,7 +1042,6 @@ function stopSpeaking() {
   const i = document.getElementById('speak-ind'); if (i) i.remove();
   currentUtterance = null;
 }
-document.getElementById('debug-search-display').textContent += ' | POST-STOPSPEAK';
 
 // ── Speech Recognition ─────────────────────────────────────────────────────
 // ── Speech Recognition ─────────────────────────────────────────────────────
@@ -1099,12 +1049,10 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 // Check if running on file:// (Android blocks mic on file://)
 const isFileProtocol = location.protocol === 'file:';
-document.getElementById('debug-search-display').textContent += ' | POST-SR';
 
 const micModal = document.getElementById('mic-modal-overlay');
 document.getElementById('modal-dismiss-btn').onclick = () => micModal.classList.remove('open');
 document.getElementById('modal-retry-btn').onclick = () => { micModal.classList.remove('open'); startRecognition(); };
-document.getElementById('debug-search-display').textContent += ' | POST-MODAL';
 
 function showMicError(msg) {
   voiceStatus.classList.add('show');
@@ -1518,11 +1466,9 @@ window.addEventListener('load', () => {
       });
   }
 });
-try { document.getElementById('debug-search-display').textContent += ' | MARK-A'; } catch(e) { document.getElementById('debug-search-display').textContent += ' | MARK-A-FAIL:' + e.message; }
 
 
 // ── Google OAuth + Calendar + Tasks ───────────────────────────────────────
-try { document.getElementById('debug-search-display').textContent += ' | MARK-B'; } catch(e) {}
 const GOOGLE_CLIENT_ID = '355427855923-bgf2lpdhhnsk8dqdjut8ihq3f1lj18d1.apps.googleusercontent.com';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/tasks.readonly';
 
@@ -1954,7 +1900,6 @@ function handleTodoBtn() {
 }
 
 // Wire up MS connect button after DOM loads
-try { document.getElementById('debug-search-display').textContent += ' | MARK-D'; } catch(e) {}
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('ms-connect-btn');
   if (btn) {
@@ -2221,91 +2166,94 @@ async function checkTodoVoiceCommand(text) {
 // ── Auto-recite tasks on home screen launch ────────────────────────────────
 async function reciteTodaysTasks() {
   try {
-    const token = localStorage.getItem('google_token');
-    const expiry = localStorage.getItem('google_token_expiry');
+    var token = localStorage.getItem('google_token');
+    var expiry = localStorage.getItem('google_token_expiry');
     if (!token || !expiry || Date.now() > parseInt(expiry)) {
       speak('Please open the calendar button to connect Google first.');
       return;
     }
     googleAccessToken = token;
 
-    const listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
+    var listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
       headers: { Authorization: 'Bearer ' + token }
     });
-    const listsData = await listsRes.json();
-    const lists = listsData.items || [];
+    var listsData = await listsRes.json();
+    var lists = listsData.items || [];
 
-    const today = new Date();
+    var today = new Date();
     today.setHours(0,0,0,0);
-    let dueTasks = [];
+    var dueTasks = [];
 
-    for (const list of lists) {
-      const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + list.id + '/tasks?showCompleted=false', {
+    for (var i = 0; i < lists.length; i++) {
+      var list = lists[i];
+      var res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + list.id + '/tasks?showCompleted=false', {
         headers: { Authorization: 'Bearer ' + token }
       });
-      const data = await res.json();
-      (data.items || []).forEach(t => {
+      var data = await res.json();
+      var items = data.items || [];
+      for (var j = 0; j < items.length; j++) {
+        var t = items[j];
         if (t.due) {
-          const dueDate = new Date(t.due);
+          var dueDate = new Date(t.due);
           dueDate.setHours(0,0,0,0);
           if (dueDate.getTime() <= today.getTime()) {
             dueTasks.push(t.title);
           }
         }
-      });
+      }
     }
 
     if (dueTasks.length === 0) {
       speak('You have no tasks due today. Great job staying on top of things!');
-      addBubble('ai', '✅ No tasks due today!');
+      addBubble('ai', 'No tasks due today!');
     } else {
-      const taskList = dueTasks.join(', ');
-      const message = dueTasks.length === 1
+      var taskListStr = dueTasks.join(', ');
+      var message = dueTasks.length === 1
         ? 'You have one task due today: ' + dueTasks[0]
-        : 'You have ' + dueTasks.length + ' tasks due today: ' + taskList;
+        : 'You have ' + dueTasks.length + ' tasks due today: ' + taskListStr;
       speak(message);
-      addBubble('ai', '📋 Tasks due today:\n' + dueTasks.map(t => '• ' + t).join('\n'));
+      addBubble('ai', 'Tasks due today: ' + dueTasks.join(', '));
     }
   } catch(e) {
     console.error('Recite error:', e);
   }
 }
 
-try { document.getElementById('debug-search-display').textContent += ' | MARK-E'; } catch(e) {}
-// Check if launched with recite param (from home screen icon)
-function checkReciteParam() {
-  const params = new URLSearchParams(window.location.search);
-  const reciteVal = params.get('recite');
-  const dbgEl = document.getElementById('debug-search-display');
-  if (dbgEl) dbgEl.textContent += ' | CHECK: recite=' + reciteVal + ' shown=' + window.__reciteBannerShown;
-  if (reciteVal === 'true' && !window.__reciteBannerShown) {
-    window.__reciteBannerShown = true;
-    if (dbgEl) dbgEl.textContent += ' | CALLING BANNER NOW';
-    try {
-      showReciteBanner();
-    } catch(err) {
-      if (dbgEl) dbgEl.textContent += ' | ERROR: ' + err.message;
-    }
-  }
-}
-window.addEventListener('load', checkReciteParam);
-document.addEventListener('DOMContentLoaded', checkReciteParam);
-checkReciteParam();
-
 function showReciteBanner() {
-  document.getElementById('debug-search-display').textContent += ' | BANNER FN CALLED';
-  const banner = document.createElement('div');
+  var banner = document.createElement('div');
   banner.id = 'recite-banner';
-  banner.setAttribute('style', 'position:fixed !important;top:70px !important;left:16px !important;right:16px !important;z-index:99999 !important;background:#4f8ef7 !important;color:white !important;padding:14px 18px !important;border-radius:14px !important;text-align:center !important;font-size:15px !important;font-weight:600 !important;cursor:pointer !important;box-shadow:0 4px 20px rgba(0,0,0,0.5) !important;display:block !important;visibility:visible !important;opacity:1 !important;');
-  banner.textContent = '🔊 Tap here to hear todays tasks';
-  banner.onclick = banner.ontouchstart = function(e) {
-    e.preventDefault();
+  banner.style.position = 'fixed';
+  banner.style.top = '70px';
+  banner.style.left = '16px';
+  banner.style.right = '16px';
+  banner.style.zIndex = '99999';
+  banner.style.background = '#4f8ef7';
+  banner.style.color = 'white';
+  banner.style.padding = '14px 18px';
+  banner.style.borderRadius = '14px';
+  banner.style.textAlign = 'center';
+  banner.style.fontSize = '15px';
+  banner.style.fontWeight = '600';
+  banner.style.cursor = 'pointer';
+  banner.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
+  banner.textContent = 'Tap here to hear todays tasks';
+  banner.addEventListener('click', function() {
     banner.remove();
     reciteTodaysTasks();
-  };
-  document.documentElement.appendChild(banner);
-  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 15000);
+  });
+  document.body.appendChild(banner);
+  setTimeout(function() { if (banner.parentNode) banner.remove(); }, 15000);
 }
+
+function checkReciteParam() {
+  var params = new URLSearchParams(window.location.search);
+  var recite = params.get('recite');
+  if (recite === 'true') {
+    showReciteBanner();
+  }
+}
+
+checkReciteParam();
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
