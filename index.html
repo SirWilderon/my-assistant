@@ -875,11 +875,14 @@ function setConnected(key) {
 }
 
 // Pre-fill saved key and auto-connect
+document.getElementById('debug-search-display').textContent += ' | PRE-LANGBTN';
 updateLangButtons();
+document.getElementById('debug-search-display').textContent += ' | POST-LANGBTN';
 if (apiKey) {
   document.getElementById('api-key-input').value = apiKey;
   setConnected(apiKey);
 }
+document.getElementById('debug-search-display').textContent += ' | POST-AUTOCONNECT';
 
 document.getElementById('save-key-btn').onclick = () => {
   const k = document.getElementById('api-key-input').value.trim();
