@@ -1473,9 +1473,11 @@ window.addEventListener('load', () => {
       });
   }
 });
+try { document.getElementById('debug-search-display').textContent += ' | MARK-A'; } catch(e) { document.getElementById('debug-search-display').textContent += ' | MARK-A-FAIL:' + e.message; }
 
 
 // ── Google OAuth + Calendar + Tasks ───────────────────────────────────────
+try { document.getElementById('debug-search-display').textContent += ' | MARK-B'; } catch(e) {}
 const GOOGLE_CLIENT_ID = '355427855923-bgf2lpdhhnsk8dqdjut8ihq3f1lj18d1.apps.googleusercontent.com';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/tasks.readonly';
 
@@ -1907,6 +1909,7 @@ function handleTodoBtn() {
 }
 
 // Wire up MS connect button after DOM loads
+try { document.getElementById('debug-search-display').textContent += ' | MARK-D'; } catch(e) {}
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('ms-connect-btn');
   if (btn) {
@@ -2223,6 +2226,7 @@ async function reciteTodaysTasks() {
   }
 }
 
+try { document.getElementById('debug-search-display').textContent += ' | MARK-E'; } catch(e) {}
 // Check if launched with recite param (from home screen icon)
 function checkReciteParam() {
   const params = new URLSearchParams(window.location.search);
