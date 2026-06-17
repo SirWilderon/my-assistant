@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
 <script>document.title = 'PA - search:[' + window.location.search + ']';</script>
-<style>#debug-search-display{position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:14px;padding:8px;z-index:999999;text-align:center;font-family:monospace;}</style>
+<style>#debug-search-display{position:fixed;top:0;left:0;right:0;background:red;color:white;font-size:10px;padding:4px;z-index:999999;text-align:left;font-family:monospace;max-height:120px;overflow-y:auto;white-space:normal;word-break:break-all;line-height:1.4;}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -919,24 +919,34 @@ document.getElementById('sheet-save-key').onclick = () => {
   if (k) setConnected(k);
 };
 document.getElementById('debug-search-display').textContent += ' | M6';
+document.getElementById('debug-search-display').textContent += ' | INPUTEL:' + (typeof inputEl !== 'undefined' && inputEl ? 'OK' : 'NULL');
 
 // Clear chat
+try {
 document.getElementById('clear-btn-m').onclick = () => {
   history = []; stopSpeaking();
   messagesEl.innerHTML = '';
   addBubble('ai', "Chat cleared! What would you like to work on?");
   closeSettings();
 };
+document.getElementById('debug-search-display').textContent += ' | M7';
+} catch(e7) { document.getElementById('debug-search-display').textContent += ' | M7-FAIL:' + e7.message; }
 
 // ── Input ──────────────────────────────────────────────────────────────────
+try {
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
   inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
   sendBtn.disabled = !inputEl.value.trim() || !apiKey;
 });
+document.getElementById('debug-search-display').textContent += ' | M8';
 inputEl.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+document.getElementById('debug-search-display').textContent += ' | M9';
 sendBtn.addEventListener('click', send);
+document.getElementById('debug-search-display').textContent += ' | M10';
 sendBtn.addEventListener('touchstart', function(e) { e.preventDefault(); send(); });
+document.getElementById('debug-search-display').textContent += ' | M11';
+} catch(e8) { document.getElementById('debug-search-display').textContent += ' | M8-FAIL:' + e8.message; }
 
 function fillInput(text) {
   inputEl.value = text;
