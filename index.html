@@ -1061,6 +1061,7 @@ try {
     ['voice-select-m','voice-select-d'].forEach(sid => { const s = document.getElementById(sid); if (s && s!==el) s.value = el.value; });
   });
 });
+document.getElementById('debug-search-display').textContent += ' | POST-VOICESELECT';
 
 // ── TTS ────────────────────────────────────────────────────────────────────
 function speak(text, bubble) {
@@ -1090,6 +1091,7 @@ function stopSpeaking() {
   const i = document.getElementById('speak-ind'); if (i) i.remove();
   currentUtterance = null;
 }
+document.getElementById('debug-search-display').textContent += ' | POST-STOPSPEAK';
 
 // ── Speech Recognition ─────────────────────────────────────────────────────
 // ── Speech Recognition ─────────────────────────────────────────────────────
@@ -1097,6 +1099,7 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 // Check if running on file:// (Android blocks mic on file://)
 const isFileProtocol = location.protocol === 'file:';
+document.getElementById('debug-search-display').textContent += ' | POST-SR';
 
 const micModal = document.getElementById('mic-modal-overlay');
 document.getElementById('modal-dismiss-btn').onclick = () => micModal.classList.remove('open');
