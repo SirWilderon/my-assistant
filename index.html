@@ -947,12 +947,14 @@ document.getElementById('debug-search-display').textContent += ' | M10';
 sendBtn.addEventListener('touchstart', function(e) { e.preventDefault(); send(); });
 document.getElementById('debug-search-display').textContent += ' | M11';
 } catch(e8) { document.getElementById('debug-search-display').textContent += ' | M8-FAIL:' + e8.message; }
+document.getElementById('debug-search-display').textContent += ' | M11b';
 
 function fillInput(text) {
   inputEl.value = text;
   inputEl.dispatchEvent(new Event('input'));
   inputEl.focus();
 }
+document.getElementById('debug-search-display').textContent += ' | M12';
 
 // ── Voice toggles (sync mobile ↔ desktop) ─────────────────────────────────
 function syncToggles() {
@@ -974,6 +976,7 @@ function syncToggles() {
   const el = document.getElementById(id);
   if (el) el.onclick = () => { autoSend = !autoSend; syncToggles(); };
 });
+document.getElementById('debug-search-display').textContent += ' | M13';
 
 // Rate sliders
 // ── Language selector sync ─────────────────────────────────────────────────
@@ -996,6 +999,7 @@ function syncLangSelectors() {
     syncLangSelectors();
   });
 });
+document.getElementById('debug-search-display').textContent += ' | M14';
 
 ['rate-slider-m','rate-slider-d'].forEach(id => {
   const el = document.getElementById(id);
