@@ -792,10 +792,13 @@ if ('serviceWorker' in navigator) {
 
 <script>
 document.getElementById('debug-search-display').textContent += ' | MAIN SCRIPT STARTED';
+document.getElementById('debug-search-display').textContent += ' | LINE2';
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
+document.getElementById('debug-search-display').textContent += ' | LINE5';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
 var MS_SCOPES = 'Tasks.Read Tasks.ReadWrite User.Read offline_access';
+document.getElementById('debug-search-display').textContent += ' | LINE8';
 
 // Global connect handler - defined first so button can always find it
 function handleConnect() {
