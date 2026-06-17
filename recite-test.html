@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recite Test</title>
+<style>
+body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; margin: 0; }
+#status { background: #222; padding: 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; word-break: break-all; }
+#banner { display: none; background: #4f8ef7; color: white; padding: 16px; border-radius: 12px; text-align: center; font-size: 16px; font-weight: 600; margin-top: 16px; }
+</style>
+</head>
+<body>
+  <h2>Recite Test Page</h2>
+  <div id="status">Loading...</div>
+  <div id="banner">🔊 BANNER SHOWS HERE</div>
+
+  <script>
+    var statusEl = document.getElementById('status');
+    var bannerEl = document.getElementById('banner');
+
+    function log(msg) {
+      statusEl.textContent += '\n' + msg;
+    }
+
+    statusEl.textContent = 'Search: ' + window.location.search;
+    log('Script running, timestamp: ' + Date.now());
+
+    var params = new URLSearchParams(window.location.search);
+    var recite = params.get('recite');
+    log('recite param = ' + recite);
+
+    if (recite === 'true') {
+      log('Condition matched! Showing banner now.');
+      bannerEl.style.display = 'block';
+    } else {
+      log('Condition NOT matched.');
+    }
+
+    log('Script finished, timestamp: ' + Date.now());
+  </script>
+</body>
+</html>
