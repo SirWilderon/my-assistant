@@ -888,7 +888,9 @@ document.getElementById('save-key-btn').onclick = () => {
   const k = document.getElementById('api-key-input').value.trim();
   if (k) setConnected(k);
 };
+document.getElementById('debug-search-display').textContent += ' | M1';
 document.getElementById('api-key-input').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('save-key-btn').click(); });
+document.getElementById('debug-search-display').textContent += ' | M2';
 
 // Clipboard paste buttons
 async function pasteFromClipboard(inputId) {
@@ -906,13 +908,17 @@ async function pasteFromClipboard(inputId) {
     alert('Long-press the text field and tap Paste to enter your API key.');
   }
 }
+document.getElementById('debug-search-display').textContent += ' | M3';
 
 document.getElementById('paste-key-btn').onclick = () => pasteFromClipboard('api-key-input');
+document.getElementById('debug-search-display').textContent += ' | M4';
 document.getElementById('sheet-paste-btn').onclick = () => pasteFromClipboard('sheet-api-input');
+document.getElementById('debug-search-display').textContent += ' | M5';
 document.getElementById('sheet-save-key').onclick = () => {
   const k = document.getElementById('sheet-api-input').value.trim();
   if (k) setConnected(k);
 };
+document.getElementById('debug-search-display').textContent += ' | M6';
 
 // Clear chat
 document.getElementById('clear-btn-m').onclick = () => {
