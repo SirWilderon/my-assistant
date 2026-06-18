@@ -1054,8 +1054,11 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const isFileProtocol = location.protocol === 'file:';
 
 const micModal = document.getElementById('mic-modal-overlay');
+try{document.querySelector('.bubble.ai').textContent += ' [L1-modal-got]';}catch(e){}
 document.getElementById('modal-dismiss-btn').onclick = () => micModal.classList.remove('open');
+try{document.querySelector('.bubble.ai').textContent += ' [L2-dismiss-set]';}catch(e){}
 document.getElementById('modal-retry-btn').onclick = () => { micModal.classList.remove('open'); startRecognition(); };
+try{document.querySelector('.bubble.ai').textContent += ' [L3-retry-set]';}catch(e){}
 
 function showMicError(msg) {
   voiceStatus.classList.add('show');
