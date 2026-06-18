@@ -1491,6 +1491,8 @@ let tokenClient = null;
       localStorage.setItem('google_token', token);
       localStorage.setItem('google_token_expiry', String(Date.now() + parseInt(expiresIn) * 1000));
       window.history.replaceState({}, document.title, window.location.pathname);
+      // Show recite banner after Google connect (user was trying to use it)
+      setTimeout(function() { showReciteBanner(); }, 1000);
     }
   }
 })();
