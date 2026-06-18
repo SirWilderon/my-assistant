@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <link rel="manifest" href="manifest.json">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1050,9 +1050,14 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 // Check if running on file:// (Android blocks mic on file://)
 const isFileProtocol = location.protocol === 'file:';
 
-const micModal = document.getElementById('mic-modal-overlay');
-document.getElementById('modal-dismiss-btn').onclick = () => micModal.classList.remove('open');
-document.getElementById('modal-retry-btn').onclick = () => { micModal.classList.remove('open'); startRecognition(); };
+let micModal = null;
+document.addEventListener('DOMContentLoaded', function() {
+  micModal = document.getElementById('mic-modal-overlay');
+  const dismissBtn = document.getElementById('modal-dismiss-btn');
+  const retryBtn = document.getElementById('modal-retry-btn');
+  if (dismissBtn) dismissBtn.onclick = () => micModal.classList.remove('open');
+  if (retryBtn) retryBtn.onclick = () => { micModal.classList.remove('open'); startRecognition(); };
+});
 
 function showMicError(msg) {
   voiceStatus.classList.add('show');
@@ -1553,8 +1558,13 @@ function closeGooglePanel() {
   document.getElementById('google-panel').classList.remove('open');
 }
 
-document.getElementById('google-panel').addEventListener('click', e => {
-  if (e.target === document.getElementById('google-panel')) closeGooglePanel();
+document.addEventListener('DOMContentLoaded', function() {
+  const panel = document.getElementById('google-panel');
+  if (panel) {
+    panel.addEventListener('click', e => {
+      if (e.target === panel) closeGooglePanel();
+    });
+  }
 });
 
 function switchTab(tab) {
@@ -2248,10 +2258,6 @@ function showReciteBanner() {
 function checkReciteParam() {
   var params = new URLSearchParams(window.location.search);
   var recite = params.get('recite');
-  var firstBubble = document.querySelector('.bubble.ai');
-  if (firstBubble) {
-    firstBubble.textContent = firstBubble.textContent + ' [RECITE-CHECK: ' + recite + ']';
-  }
   if (recite === 'true') {
     showReciteBanner();
   }
