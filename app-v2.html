@@ -1412,6 +1412,7 @@ function updateLangButtons() {
   });
 }
 
+try{document.querySelector('.bubble.ai').textContent += ' [B-MID-1413]';}catch(e){}
 async function send() {
   const text = inputEl.value.trim();
   if (!text) return;
@@ -2221,6 +2222,7 @@ async function reciteTodaysTasks() {
 }
 
 function showReciteBanner() {
+  try{document.querySelector('.bubble.ai').textContent += ' [E-BANNER-FN-START]';}catch(e){}
   var banner = document.createElement('div');
   banner.id = 'recite-banner';
   banner.style.position = 'fixed';
@@ -2242,7 +2244,9 @@ function showReciteBanner() {
     banner.remove();
     reciteTodaysTasks();
   });
+  try{document.querySelector('.bubble.ai').textContent += ' [F-PRE-APPEND]';}catch(e){}
   document.body.appendChild(banner);
+  try{document.querySelector('.bubble.ai').textContent += ' [G-POST-APPEND]';}catch(e){}
   setTimeout(function() { if (banner.parentNode) banner.remove(); }, 15000);
 }
 
@@ -2254,10 +2258,12 @@ function checkReciteParam() {
     firstBubble.textContent = firstBubble.textContent + ' [RECITE-CHECK: ' + recite + ']';
   }
   if (recite === 'true') {
+    if (firstBubble) firstBubble.textContent += ' [D-CALLING-BANNER]';
     showReciteBanner();
   }
 }
 
+try{document.querySelector('.bubble.ai').textContent += ' [C-PRE-CALL]';}catch(e){}
 checkReciteParam();
 
 // Scroll to bottom on resize (keyboard open/close)
