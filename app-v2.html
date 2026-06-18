@@ -1,9 +1,9 @@
-ְ<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <link rel="manifest" href="manifest.json">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -910,7 +910,6 @@ inputEl.addEventListener('input', () => {
 inputEl.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
 sendBtn.addEventListener('click', send);
 sendBtn.addEventListener('touchstart', function(e) { e.preventDefault(); send(); });
-try{document.querySelector('.bubble.ai').textContent += ' [I-MID-912]';}catch(e){}
 
 function fillInput(text) {
   inputEl.value = text;
@@ -1039,7 +1038,6 @@ function speak(text, bubble) {
   speechSynthesis.speak(utt);
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [H-MID-1039]';}catch(e){}
 function stopSpeaking() {
   if (speechSynthesis.speaking) speechSynthesis.cancel();
   const i = document.getElementById('speak-ind'); if (i) i.remove();
