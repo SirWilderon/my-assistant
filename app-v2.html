@@ -1053,12 +1053,14 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 // Check if running on file:// (Android blocks mic on file://)
 const isFileProtocol = location.protocol === 'file:';
 
-const micModal = document.getElementById('mic-modal-overlay');
-try{document.querySelector('.bubble.ai').textContent += ' [L1-modal-got]';}catch(e){}
-document.getElementById('modal-dismiss-btn').onclick = () => micModal.classList.remove('open');
-try{document.querySelector('.bubble.ai').textContent += ' [L2-dismiss-set]';}catch(e){}
-document.getElementById('modal-retry-btn').onclick = () => { micModal.classList.remove('open'); startRecognition(); };
-try{document.querySelector('.bubble.ai').textContent += ' [L3-retry-set]';}catch(e){}
+let micModal = null;
+document.addEventListener('DOMContentLoaded', function() {
+  micModal = document.getElementById('mic-modal-overlay');
+  const dismissBtn = document.getElementById('modal-dismiss-btn');
+  const retryBtn = document.getElementById('modal-retry-btn');
+  if (dismissBtn) dismissBtn.onclick = () => micModal.classList.remove('open');
+  if (retryBtn) retryBtn.onclick = () => { micModal.classList.remove('open'); startRecognition(); };
+});
 
 function showMicError(msg) {
   voiceStatus.classList.add('show');
@@ -1562,8 +1564,13 @@ function closeGooglePanel() {
   document.getElementById('google-panel').classList.remove('open');
 }
 
-document.getElementById('google-panel').addEventListener('click', e => {
-  if (e.target === document.getElementById('google-panel')) closeGooglePanel();
+document.addEventListener('DOMContentLoaded', function() {
+  const panel = document.getElementById('google-panel');
+  if (panel) {
+    panel.addEventListener('click', e => {
+      if (e.target === panel) closeGooglePanel();
+    });
+  }
 });
 
 function switchTab(tab) {
