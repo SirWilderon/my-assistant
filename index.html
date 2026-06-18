@@ -2248,6 +2248,7 @@ function showReciteBanner() {
 function checkReciteParam() {
   var params = new URLSearchParams(window.location.search);
   var recite = params.get('recite');
+  document.title = 'recite=' + recite;
   if (recite === 'true') {
     showReciteBanner();
   }
