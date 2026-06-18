@@ -2176,38 +2176,70 @@ async function checkTodoVoiceCommand(text) {
 // ── Auto-recite tasks on home screen launch ────────────────────────────────
 async function reciteTodaysTasks() {
   try {
-    var token = localStorage.getItem('google_token');
-    var expiry = localStorage.getItem('google_token_expiry');
-    if (!token || !expiry || Date.now() > parseInt(expiry)) {
-      speak('Please open the calendar button to connect Google first.');
-      return;
-    }
-    googleAccessToken = token;
-
-    var listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    var listsData = await listsRes.json();
-    var lists = listsData.items || [];
-
+    var dueTasks = [];
     var today = new Date();
     today.setHours(0,0,0,0);
-    var dueTasks = [];
 
-    for (var i = 0; i < lists.length; i++) {
-      var list = lists[i];
-      var res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + list.id + '/tasks?showCompleted=false', {
+    // ── Check Google Tasks ──────────────────────────────────────────────
+    var token = localStorage.getItem('google_token');
+    var expiry = localStorage.getItem('google_token_expiry');
+    if (token && expiry && Date.now() < parseInt(expiry)) {
+      googleAccessToken = token;
+      var listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
         headers: { Authorization: 'Bearer ' + token }
       });
-      var data = await res.json();
-      var items = data.items || [];
-      for (var j = 0; j < items.length; j++) {
-        var t = items[j];
-        if (t.due) {
-          var dueDate = new Date(t.due);
-          dueDate.setHours(0,0,0,0);
-          if (dueDate.getTime() <= today.getTime()) {
-            dueTasks.push(t.title);
+      var listsData = await listsRes.json();
+      var lists = listsData.items || [];
+
+      for (var i = 0; i < lists.length; i++) {
+        var list = lists[i];
+        var res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + list.id + '/tasks?showCompleted=false', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        var data = await res.json();
+        var items = data.items || [];
+        for (var j = 0; j < items.length; j++) {
+          var t = items[j];
+          if (t.due) {
+            var dueDate = new Date(t.due);
+            dueDate.setHours(0,0,0,0);
+            if (dueDate.getTime() <= today.getTime()) {
+              dueTasks.push(t.title);
+            }
+          }
+        }
+      }
+    }
+
+    // ── Check Microsoft To Do ───────────────────────────────────────────
+    var msToken = localStorage.getItem('ms_access_token');
+    var msExpiry = localStorage.getItem('ms_token_expiry');
+    if (msToken && msExpiry && Date.now() < parseInt(msExpiry)) {
+      var msListsRes = await fetch('https://graph.microsoft.com/v1.0/me/todo/lists', {
+        headers: { Authorization: 'Bearer ' + msToken }
+      });
+      var msListsData = await msListsRes.json();
+      var msLists = msListsData.value || [];
+
+      for (var k = 0; k < msLists.length; k++) {
+        var msList = msLists[k];
+        var msRes = await fetch(
+          'https://graph.microsoft.com/v1.0/me/todo/lists/' + msList.id + "/tasks?$filter=status ne 'completed'&$top=100",
+          { headers: { Authorization: 'Bearer ' + msToken } }
+        );
+        var msData = await msRes.json();
+        var msItems = msData.value || [];
+        for (var m = 0; m < msItems.length; m++) {
+          var msTask = msItems[m];
+          if (msTask.dueDateTime) {
+            var msDueDate = new Date(msTask.dueDateTime.dateTime);
+            msDueDate.setHours(0,0,0,0);
+            if (msDueDate.getTime() <= today.getTime()) {
+              // Avoid duplicate if already added from Google sync
+              if (dueTasks.indexOf(msTask.title) === -1) {
+                dueTasks.push(msTask.title);
+              }
+            }
           }
         }
       }
