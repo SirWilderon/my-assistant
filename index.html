@@ -2179,8 +2179,7 @@ async function reciteTodaysTasks() {
     var token = localStorage.getItem('google_token');
     var expiry = localStorage.getItem('google_token_expiry');
     if (!token || !expiry || Date.now() > parseInt(expiry)) {
-      speak('Please open the calendar button to connect Google first.');
-      return;
+      return null;
     }
     googleAccessToken = token;
 
@@ -2214,18 +2213,15 @@ async function reciteTodaysTasks() {
     }
 
     if (dueTasks.length === 0) {
-      speak('You have no tasks due today. Great job staying on top of things!');
-      addBubble('ai', 'No tasks due today!');
+      return null;
     } else {
-      var taskListStr = dueTasks.join(', ');
-      var message = dueTasks.length === 1
+      return dueTasks.length === 1
         ? 'You have one task due today: ' + dueTasks[0]
-        : 'You have ' + dueTasks.length + ' tasks due today: ' + taskListStr;
-      speak(message);
-      addBubble('ai', 'Tasks due today: ' + dueTasks.join(', '));
+        : 'You have ' + dueTasks.length + ' tasks due today: ' + dueTasks.join(', ');
     }
   } catch(e) {
     console.error('Recite error:', e);
+    return null;
   }
 }
 
@@ -2247,16 +2243,41 @@ function showReciteBanner() {
   banner.style.cursor = 'pointer';
   banner.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
   banner.textContent = 'Tap here to hear todays tasks';
+  document.body.appendChild(banner);
+
+  // Pre-fetch tasks in the background while user sees the banner
+  var prefetchedMessage = null;
+  var prefetchDone = false;
+  reciteTodaysTasks().then(function(msg) {
+    prefetchedMessage = msg;
+    prefetchDone = true;
+    if (prefetchedMessage) {
+      banner.textContent = '🔊 Tap to hear: ' + prefetchedMessage.substring(0, 40) + '...';
+    } else {
+      banner.textContent = '✅ No tasks due today';
+    }
+  }).catch(function() {
+    prefetchDone = true;
+  });
+
   banner.addEventListener('click', function() {
     banner.remove();
-    // Unlock speech synthesis immediately within the user gesture context
-    var unlock = new SpeechSynthesisUtterance('');
-    speechSynthesis.speak(unlock);
-    speechSynthesis.cancel();
-    reciteTodaysTasks();
+    if (prefetchDone && prefetchedMessage) {
+      speak(prefetchedMessage);
+      addBubble('ai', 'Tasks due today: ' + prefetchedMessage);
+    } else if (prefetchDone && !prefetchedMessage) {
+      speak('You have no tasks due today. Great job!');
+      addBubble('ai', 'No tasks due today!');
+    } else {
+      // Still loading - speak when ready
+      speak('Loading your tasks, please wait.');
+      reciteTodaysTasks().then(function(msg) {
+        if (msg) speak(msg);
+      });
+    }
   });
-  document.body.appendChild(banner);
-  setTimeout(function() { if (banner.parentNode) banner.remove(); }, 15000);
+
+  setTimeout(function() { if (banner.parentNode) banner.remove(); }, 20000);
 }
 
 function checkReciteParam() {
