@@ -32,6 +32,7 @@ if (hash && hash.includes('access_token')) {
     // Save to localStorage
     localStorage.setItem('google_token', token);
     localStorage.setItem('google_token_expiry', String(Date.now() + expiresIn * 1000));
+    localStorage.setItem('show_recite_banner', 'true');
     document.getElementById('status').innerHTML = '✅ Google connected!<br><br><a href="https://sirwilderon.github.io/my-assistant/">← Back to Assistant</a>';
     document.getElementById('msg').textContent = 'Token saved. Redirecting back...';
     setTimeout(() => {
