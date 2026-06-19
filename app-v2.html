@@ -1491,16 +1491,9 @@ let tokenClient = null;
       localStorage.setItem('google_token', token);
       localStorage.setItem('google_token_expiry', String(Date.now() + parseInt(expiresIn) * 1000));
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Show recite banner after Google connect (user was trying to use it)
-      setTimeout(function() { showReciteBanner(); }, 1000);
     }
   }
 })();
-// Also show banner if returning from Google auth
-if (localStorage.getItem('show_recite_banner') === 'true') {
-  localStorage.removeItem('show_recite_banner');
-  setTimeout(function() { showReciteBanner(); }, 1000);
-}
 let currentTab = 'calendar';
 
 // Init Google Identity Services
@@ -2270,7 +2263,13 @@ function checkReciteParam() {
   }
 }
 
-checkReciteParam();
+// Show banner if launched with ?recite=true OR returning from Google auth
+if (localStorage.getItem('show_recite_banner') === 'true') {
+  localStorage.removeItem('show_recite_banner');
+  showReciteBanner();
+} else {
+  checkReciteParam();
+}
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
