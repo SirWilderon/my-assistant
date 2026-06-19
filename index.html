@@ -1491,8 +1491,6 @@ let tokenClient = null;
       localStorage.setItem('google_token', token);
       localStorage.setItem('google_token_expiry', String(Date.now() + parseInt(expiresIn) * 1000));
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Show recite banner after Google connect (user was trying to use it)
-      setTimeout(function() { showReciteBanner(); }, 1000);
     }
   }
 })();
@@ -2251,6 +2249,10 @@ function showReciteBanner() {
   banner.textContent = 'Tap here to hear todays tasks';
   banner.addEventListener('click', function() {
     banner.remove();
+    // Unlock speech synthesis immediately within the user gesture context
+    var unlock = new SpeechSynthesisUtterance('');
+    speechSynthesis.speak(unlock);
+    speechSynthesis.cancel();
     reciteTodaysTasks();
   });
   document.body.appendChild(banner);
@@ -2265,7 +2267,13 @@ function checkReciteParam() {
   }
 }
 
-checkReciteParam();
+// Show banner if launched with ?recite=true OR returning from Google auth
+if (localStorage.getItem('show_recite_banner') === 'true') {
+  localStorage.removeItem('show_recite_banner');
+  showReciteBanner();
+} else {
+  checkReciteParam();
+}
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
