@@ -785,7 +785,6 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <script>
-document.querySelector('.bubble.ai').textContent += ' [TOP-OF-SCRIPT-RAN]';
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
@@ -910,7 +909,6 @@ inputEl.addEventListener('input', () => {
 inputEl.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
 sendBtn.addEventListener('click', send);
 sendBtn.addEventListener('touchstart', function(e) { e.preventDefault(); send(); });
-try{document.querySelector('.bubble.ai').textContent += ' [I-MID-912]';}catch(e){}
 
 function fillInput(text) {
   inputEl.value = text;
@@ -1039,7 +1037,6 @@ function speak(text, bubble) {
   speechSynthesis.speak(utt);
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [H-MID-1039]';}catch(e){}
 function stopSpeaking() {
   if (speechSynthesis.speaking) speechSynthesis.cancel();
   const i = document.getElementById('speak-ind'); if (i) i.remove();
@@ -1162,7 +1159,6 @@ function startSingleLang(lang) {
   }
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [K-MID-1158]';}catch(e){}
 function startAutoDetect() {
   isRecording = true;
   micBtn.classList.add('recording');
@@ -1260,7 +1256,6 @@ function startAutoDetect() {
 
 // mic button uses inline ontouchstart/onclick handlers for direct gesture access
 
-try{document.querySelector('.bubble.ai').textContent += ' [J-MID-1253]';}catch(e){}
 // ── Bubbles ────────────────────────────────────────────────────────────────
 function addBubble(role, text, loading=false) {
   const group = document.createElement('div');
@@ -1421,7 +1416,6 @@ function updateLangButtons() {
   });
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [B-MID-1413]';}catch(e){}
 async function send() {
   const text = inputEl.value.trim();
   if (!text) return;
@@ -1497,9 +1491,16 @@ let tokenClient = null;
       localStorage.setItem('google_token', token);
       localStorage.setItem('google_token_expiry', String(Date.now() + parseInt(expiresIn) * 1000));
       window.history.replaceState({}, document.title, window.location.pathname);
+      // Show recite banner after Google connect (user was trying to use it)
+      setTimeout(function() { showReciteBanner(); }, 1000);
     }
   }
 })();
+// Also show banner if returning from Google auth
+if (localStorage.getItem('show_recite_banner') === 'true') {
+  localStorage.removeItem('show_recite_banner');
+  setTimeout(function() { showReciteBanner(); }, 1000);
+}
 let currentTab = 'calendar';
 
 // Init Google Identity Services
@@ -2236,7 +2237,6 @@ async function reciteTodaysTasks() {
 }
 
 function showReciteBanner() {
-  try{document.querySelector('.bubble.ai').textContent += ' [E-BANNER-FN-START]';}catch(e){}
   var banner = document.createElement('div');
   banner.id = 'recite-banner';
   banner.style.position = 'fixed';
@@ -2258,26 +2258,18 @@ function showReciteBanner() {
     banner.remove();
     reciteTodaysTasks();
   });
-  try{document.querySelector('.bubble.ai').textContent += ' [F-PRE-APPEND]';}catch(e){}
   document.body.appendChild(banner);
-  try{document.querySelector('.bubble.ai').textContent += ' [G-POST-APPEND]';}catch(e){}
   setTimeout(function() { if (banner.parentNode) banner.remove(); }, 15000);
 }
 
 function checkReciteParam() {
   var params = new URLSearchParams(window.location.search);
   var recite = params.get('recite');
-  var firstBubble = document.querySelector('.bubble.ai');
-  if (firstBubble) {
-    firstBubble.textContent = firstBubble.textContent + ' [RECITE-CHECK: ' + recite + ']';
-  }
   if (recite === 'true') {
-    if (firstBubble) firstBubble.textContent += ' [D-CALLING-BANNER]';
     showReciteBanner();
   }
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [C-PRE-CALL]';}catch(e){}
 checkReciteParam();
 
 // Scroll to bottom on resize (keyboard open/close)
