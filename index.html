@@ -608,14 +608,10 @@
 </head>
 <body>
 <script>
-// Unregister any stuck service workers that might be intercepting requests
+// Register service worker (required for PWA installability)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for (let registration of registrations) {
-      registration.unregister();
-          }
-    if (registrations.length === 0) {
-          }
+  navigator.serviceWorker.register('sw.js').catch(function(err) {
+    console.log('Service worker registration failed:', err);
   });
 }
 </script>
