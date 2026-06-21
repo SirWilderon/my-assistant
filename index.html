@@ -2277,21 +2277,8 @@ function showReciteBanner() {
   });
 }
 
-function checkReciteParam() {
-  var params = new URLSearchParams(window.location.search);
-  var recite = params.get('recite');
-  if (recite === 'true') {
-    showReciteBanner();
-  }
-}
-
-// Show banner if launched with ?recite=true OR returning from Google auth
-if (localStorage.getItem('show_recite_banner') === 'true') {
-  localStorage.removeItem('show_recite_banner');
-  showReciteBanner();
-} else {
-  checkReciteParam();
-}
+// Always show the tasks banner whenever the app opens
+showReciteBanner();
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
