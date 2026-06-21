@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2183,7 +2183,6 @@ async function reciteTodaysTasks() {
     var token = localStorage.getItem('google_token');
     var expiry = localStorage.getItem('google_token_expiry');
     if (!token || !expiry || Date.now() > parseInt(expiry)) {
-      addBubble('ai', 'DEBUG: No valid Google token. token=' + !!token + ' expiry=' + !!expiry);
       return null;
     }
     googleAccessToken = token;
@@ -2193,7 +2192,6 @@ async function reciteTodaysTasks() {
     });
     var listsData = await listsRes.json();
     var lists = listsData.items || [];
-    addBubble('ai', 'DEBUG: Found ' + lists.length + ' task lists');
 
     var today = new Date();
     today.setHours(0,0,0,0);
@@ -2206,7 +2204,6 @@ async function reciteTodaysTasks() {
       });
       var data = await res.json();
       var items = data.items || [];
-      addBubble('ai', 'DEBUG: List "' + list.title + '" has ' + items.length + ' items');
       for (var j = 0; j < items.length; j++) {
         var t = items[j];
         if (t.due) {
@@ -2219,7 +2216,6 @@ async function reciteTodaysTasks() {
       }
     }
 
-    addBubble('ai', 'DEBUG: Total due tasks found: ' + dueTasks.length);
     return dueTasks; // array of {title, lang}, empty array if none
   } catch(e) {
     console.error('Recite error:', e);
