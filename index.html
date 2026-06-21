@@ -609,10 +609,15 @@
 <body>
 <script>
 // Register service worker (required for PWA installability)
+window.__swStatus = 'checking';
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(function(err) {
-    console.log('Service worker registration failed:', err);
+  navigator.serviceWorker.register('sw.js').then(function(reg) {
+    window.__swStatus = 'registered: ' + reg.scope;
+  }).catch(function(err) {
+    window.__swStatus = 'failed: ' + err.message;
   });
+} else {
+  window.__swStatus = 'not supported';
 }
 </script>
 
@@ -2291,6 +2296,12 @@ if (localStorage.getItem('show_recite_banner') === 'true') {
 } else {
   checkReciteParam();
 }
+
+// Show SW registration status for debugging
+setTimeout(function() {
+  var b = document.querySelector('.bubble.ai');
+  if (b) b.textContent += ' [SW: ' + window.__swStatus + ']';
+}, 1500);
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
