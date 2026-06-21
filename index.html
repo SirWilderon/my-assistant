@@ -2229,20 +2229,23 @@ function showReciteBanner() {
   var banner = document.createElement('div');
   banner.id = 'recite-banner';
   banner.style.position = 'fixed';
-  banner.style.top = '70px';
-  banner.style.left = '16px';
-  banner.style.right = '16px';
+  banner.style.top = '14px';
+  banner.style.right = '14px';
   banner.style.zIndex = '99999';
   banner.style.background = '#4f8ef7';
   banner.style.color = 'white';
-  banner.style.padding = '14px 18px';
-  banner.style.borderRadius = '14px';
+  banner.style.padding = '8px 14px';
+  banner.style.borderRadius = '20px';
   banner.style.textAlign = 'center';
-  banner.style.fontSize = '15px';
+  banner.style.fontSize = '12px';
   banner.style.fontWeight = '600';
   banner.style.cursor = 'pointer';
-  banner.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
-  banner.textContent = 'Tap here to hear todays tasks';
+  banner.style.boxShadow = '0 2px 10px rgba(0,0,0,0.4)';
+  banner.style.maxWidth = '140px';
+  banner.style.whiteSpace = 'nowrap';
+  banner.style.overflow = 'hidden';
+  banner.style.textOverflow = 'ellipsis';
+  banner.textContent = '🔊 Tasks';
   document.body.appendChild(banner);
 
   // Pre-fetch tasks in the background while user sees the banner
@@ -2252,9 +2255,10 @@ function showReciteBanner() {
     prefetchedMessage = msg;
     prefetchDone = true;
     if (prefetchedMessage) {
-      banner.textContent = '🔊 Tap to hear: ' + prefetchedMessage.substring(0, 40) + '...';
+      var count = (prefetchedMessage.match(/^You have (\d+|one)/) || [])[1];
+      banner.textContent = '🔊 ' + (count || '') + ' Tasks';
     } else {
-      banner.textContent = '✅ No tasks due today';
+      banner.textContent = '✅ Tasks';
     }
   }).catch(function() {
     prefetchDone = true;
