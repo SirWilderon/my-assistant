@@ -1134,7 +1134,15 @@ function startSingleLang(lang) {
         return;
       }
       // Check for To Do voice command
-      checkTodoVoiceCommand(final).then(handled => { if (!handled) { inputEl.value = final; inputEl.dispatchEvent(new Event("input")); if (apiKey) setTimeout(() => send(), 200); } });
+      checkTodoVoiceCommand(final).then(handled => {
+        if (!handled) {
+          // DEBUG: show char codes for Hebrew troubleshooting
+          if (/[\u0590-\u05FF]/.test(final)) {
+            addBubble('ai', 'DEBUG chars: ' + [...final].map(c => c.charCodeAt(0)).join(','));
+          }
+          inputEl.value = final; inputEl.dispatchEvent(new Event("input")); if (apiKey) setTimeout(() => send(), 200);
+        }
+      });
       return;
     }
   };
