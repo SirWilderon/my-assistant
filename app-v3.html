@@ -1136,10 +1136,8 @@ function startSingleLang(lang) {
       // Check for To Do voice command
       checkTodoVoiceCommand(final).then(handled => {
         if (!handled) {
-          // DEBUG: show char codes for Hebrew troubleshooting
-          if (/[\u0590-\u05FF]/.test(final)) {
-            addBubble('ai', 'DEBUG chars: ' + [...final].map(c => c.charCodeAt(0)).join(','));
-          }
+          // DEBUG: show exact text and char codes
+          addBubble('ai', 'DEBUG: "' + final + '" chars: ' + [...final].map(c => c.charCodeAt(0)).join(','));
           inputEl.value = final; inputEl.dispatchEvent(new Event("input")); if (apiKey) setTimeout(() => send(), 200);
         }
       });
