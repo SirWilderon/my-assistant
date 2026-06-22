@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <title>My Personal Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -608,14 +608,10 @@
 </head>
 <body>
 <script>
-// Unregister any stuck service workers that might be intercepting requests
+// Register service worker (required for PWA installability)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for (let registration of registrations) {
-      registration.unregister();
-          }
-    if (registrations.length === 0) {
-          }
+  navigator.serviceWorker.register('sw.js').catch(function(err) {
+    console.log('Service worker registration failed:', err);
   });
 }
 </script>
@@ -785,7 +781,6 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <script>
-document.querySelector('.bubble.ai').textContent += ' [TOP-OF-SCRIPT-RAN]';
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
@@ -815,8 +810,9 @@ function getSystem() {
   const langInstruction = micLang === 'auto'
     ? 'Detect the language the user is writing in (English, Hebrew, or Russian) and always reply in that same language.'
     : `Always respond in ${LANG_NAMES[micLang] || 'English'} — the user is speaking ${LANG_NAMES[micLang] || 'English'}.`;
-  const todoConnected = !!localStorage.getItem('ms_access_token');
-  return `You are a warm, proactive personal assistant. Help the user manage their schedule, tasks, emails, and daily life. Be concise and conversational — replies may be spoken aloud so avoid markdown symbols like asterisks or bullet dashes; use natural spoken language. IMPORTANT: ${langInstruction} When relevant, suggest actions. ${todoConnected ? 'Microsoft To Do is connected — user can add tasks by saying \'Add task: [task name]\' or \'Remind me to [task name]\'' : 'Microsoft To Do is not yet connected.'} Today's date: ${dateStr}.`;
+  return `You are a warm, proactive personal assistant. Help the user manage their schedule, tasks, emails, and daily life. Be concise and conversational — replies may be spoken aloud so avoid markdown symbols like asterisks or bullet dashes; use natural spoken language. IMPORTANT: ${langInstruction} When relevant, suggest actions. Today's date: ${dateStr}.
+
+CRITICAL - TASK ADDING: You CANNOT add tasks yourself. Only the app's built-in voice command system can actually add tasks to Google Tasks. If the user asks you to add a task, remind them to use the voice command format: In English say "Add task: name" or "New task: name" or "Remind me to name". In Hebrew say "הוסף משימה: שם" or "משימה חדשה: שם". In Russian say "Добавь задачу: название". Never say you have added, saved, or created a task — you cannot do this. Always redirect to the voice command format.`;
 }
 
 // ── DOM ────────────────────────────────────────────────────────────────────
@@ -910,7 +906,6 @@ inputEl.addEventListener('input', () => {
 inputEl.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
 sendBtn.addEventListener('click', send);
 sendBtn.addEventListener('touchstart', function(e) { e.preventDefault(); send(); });
-try{document.querySelector('.bubble.ai').textContent += ' [I-MID-912]';}catch(e){}
 
 function fillInput(text) {
   inputEl.value = text;
@@ -1039,7 +1034,6 @@ function speak(text, bubble) {
   speechSynthesis.speak(utt);
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [H-MID-1039]';}catch(e){}
 function stopSpeaking() {
   if (speechSynthesis.speaking) speechSynthesis.cancel();
   const i = document.getElementById('speak-ind'); if (i) i.remove();
@@ -1140,7 +1134,15 @@ function startSingleLang(lang) {
         return;
       }
       // Check for To Do voice command
-      checkTodoVoiceCommand(final).then(handled => { if (!handled) { inputEl.value = final; inputEl.dispatchEvent(new Event("input")); if (apiKey) setTimeout(() => send(), 200); } });
+      checkTodoVoiceCommand(final).then(handled => {
+        if (!handled) {
+          // DEBUG: show char codes for Hebrew troubleshooting
+          if (/[\u0590-\u05FF]/.test(final)) {
+            addBubble('ai', 'DEBUG chars: ' + [...final].map(c => c.charCodeAt(0)).join(','));
+          }
+          inputEl.value = final; inputEl.dispatchEvent(new Event("input")); if (apiKey) setTimeout(() => send(), 200);
+        }
+      });
       return;
     }
   };
@@ -1162,7 +1164,6 @@ function startSingleLang(lang) {
   }
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [K-MID-1158]';}catch(e){}
 function startAutoDetect() {
   isRecording = true;
   micBtn.classList.add('recording');
@@ -1260,7 +1261,6 @@ function startAutoDetect() {
 
 // mic button uses inline ontouchstart/onclick handlers for direct gesture access
 
-try{document.querySelector('.bubble.ai').textContent += ' [J-MID-1253]';}catch(e){}
 // ── Bubbles ────────────────────────────────────────────────────────────────
 function addBubble(role, text, loading=false) {
   const group = document.createElement('div');
@@ -1421,7 +1421,6 @@ function updateLangButtons() {
   });
 }
 
-try{document.querySelector('.bubble.ai').textContent += ' [B-MID-1413]';}catch(e){}
 async function send() {
   const text = inputEl.value.trim();
   if (!text) return;
@@ -2128,7 +2127,7 @@ async function checkTodoVoiceCommand(text) {
     /^(?:add task|new task|add to do|add todo)[,:\s]+(.+)/i,
     /^(?:remind me to|reminder to|reminder)[,:\s]+(.+)/i,
     /^(?:task)[,:\s]+(.+)/i,
-    /^(?:הוסף משימה|משימה חדשה)[,:\s]+(.+)/i,
+    /^(?:הוסף משימה|אוסף משימה|משימה חדשה)[,:\s]+(.+)/i,
     /^(?:добавь задачу|новая задача)[,:\s]+(.+)/i,
   ];
 
@@ -2180,13 +2179,20 @@ async function checkTodoVoiceCommand(text) {
 
 
 // ── Auto-recite tasks on home screen launch ────────────────────────────────
+function detectTaskLanguage(text) {
+  // Hebrew characters
+  if (/[\u0590-\u05FF]/.test(text)) return 'he-IL';
+  // Russian/Cyrillic characters
+  if (/[\u0400-\u04FF]/.test(text)) return 'ru-RU';
+  return 'en-US';
+}
+
 async function reciteTodaysTasks() {
   try {
     var token = localStorage.getItem('google_token');
     var expiry = localStorage.getItem('google_token_expiry');
     if (!token || !expiry || Date.now() > parseInt(expiry)) {
-      speak('Please open the calendar button to connect Google first.');
-      return;
+      return null;
     }
     googleAccessToken = token;
 
@@ -2213,72 +2219,113 @@ async function reciteTodaysTasks() {
           var dueDate = new Date(t.due);
           dueDate.setHours(0,0,0,0);
           if (dueDate.getTime() <= today.getTime()) {
-            dueTasks.push(t.title);
+            dueTasks.push({ title: t.title, lang: detectTaskLanguage(t.title) });
           }
         }
       }
     }
 
-    if (dueTasks.length === 0) {
-      speak('You have no tasks due today. Great job staying on top of things!');
-      addBubble('ai', 'No tasks due today!');
-    } else {
-      var taskListStr = dueTasks.join(', ');
-      var message = dueTasks.length === 1
-        ? 'You have one task due today: ' + dueTasks[0]
-        : 'You have ' + dueTasks.length + ' tasks due today: ' + taskListStr;
-      speak(message);
-      addBubble('ai', 'Tasks due today: ' + dueTasks.join(', '));
-    }
+    return dueTasks; // array of {title, lang}, empty array if none
   } catch(e) {
     console.error('Recite error:', e);
+    return [];
   }
+}
+
+function speakTaskList(tasks) {
+  if (!tasks || tasks.length === 0) {
+    speak('You have no tasks due today. Great job!');
+    return;
+  }
+
+  var voices = speechSynthesis.getVoices();
+  var introMap = {
+    'en-US': tasks.length === 1 ? 'You have one task due today.' : 'You have ' + tasks.length + ' tasks due today.',
+    'he-IL': 'יש לך ' + tasks.length + ' משימות להיום.',
+    'ru-RU': 'У вас ' + tasks.length + ' задач на сегодня.'
+  };
+
+  // Speak intro in English by default
+  var introUtt = new SpeechSynthesisUtterance(introMap['en-US']);
+  introUtt.rate = speakRate;
+  var enVoice = voices.find(v => v.lang.startsWith('en'));
+  if (enVoice) introUtt.voice = enVoice;
+  speechSynthesis.speak(introUtt);
+
+  // Speak each task in its own detected language
+  tasks.forEach(function(task) {
+    var utt = new SpeechSynthesisUtterance(task.title);
+    utt.rate = speakRate;
+    var langPrefix = task.lang.split('-')[0];
+    var matchedVoice = voices.find(v => v.lang.startsWith(langPrefix)) || voices.find(v => v.lang.startsWith('en'));
+    if (matchedVoice) utt.voice = matchedVoice;
+    utt.lang = task.lang;
+    speechSynthesis.speak(utt);
+  });
 }
 
 function showReciteBanner() {
-  try{document.querySelector('.bubble.ai').textContent += ' [E-BANNER-FN-START]';}catch(e){}
+  // Don't create duplicate banners
+  var existing = document.getElementById('recite-banner');
+  if (existing) return;
+
   var banner = document.createElement('div');
   banner.id = 'recite-banner';
   banner.style.position = 'fixed';
-  banner.style.top = '70px';
-  banner.style.left = '16px';
-  banner.style.right = '16px';
+  banner.style.top = '64px';
+  banner.style.right = '14px';
   banner.style.zIndex = '99999';
   banner.style.background = '#4f8ef7';
   banner.style.color = 'white';
-  banner.style.padding = '14px 18px';
-  banner.style.borderRadius = '14px';
+  banner.style.padding = '8px 14px';
+  banner.style.borderRadius = '20px';
   banner.style.textAlign = 'center';
-  banner.style.fontSize = '15px';
+  banner.style.fontSize = '12px';
   banner.style.fontWeight = '600';
   banner.style.cursor = 'pointer';
-  banner.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
-  banner.textContent = 'Tap here to hear todays tasks';
-  banner.addEventListener('click', function() {
-    banner.remove();
-    reciteTodaysTasks();
-  });
-  try{document.querySelector('.bubble.ai').textContent += ' [F-PRE-APPEND]';}catch(e){}
+  banner.style.boxShadow = '0 2px 10px rgba(0,0,0,0.4)';
+  banner.style.maxWidth = '140px';
+  banner.style.whiteSpace = 'nowrap';
+  banner.style.overflow = 'hidden';
+  banner.style.textOverflow = 'ellipsis';
+  banner.textContent = '🔊 Tasks';
   document.body.appendChild(banner);
-  try{document.querySelector('.bubble.ai').textContent += ' [G-POST-APPEND]';}catch(e){}
-  setTimeout(function() { if (banner.parentNode) banner.remove(); }, 15000);
+
+  // Pre-fetch tasks in the background while user sees the banner
+  var prefetchedTasks = null;
+  var prefetchDone = false;
+  reciteTodaysTasks().then(function(tasks) {
+    prefetchedTasks = tasks;
+    prefetchDone = true;
+    if (tasks && tasks.length > 0) {
+      banner.textContent = '🔊 ' + tasks.length + ' Tasks';
+    } else {
+      banner.textContent = '✅ Tasks';
+    }
+  }).catch(function() {
+    prefetchDone = true;
+  });
+
+  banner.addEventListener('click', function() {
+    if (prefetchDone) {
+      speakTaskList(prefetchedTasks);
+      if (prefetchedTasks && prefetchedTasks.length > 0) {
+        addBubble('ai', 'Tasks due today: ' + prefetchedTasks.map(function(t) { return t.title; }).join(', '));
+      } else {
+        addBubble('ai', 'No tasks due today!');
+      }
+    } else {
+      // Still loading - speak when ready
+      speak('Loading your tasks, please wait.');
+      reciteTodaysTasks().then(function(tasks) {
+        speakTaskList(tasks);
+      });
+    }
+  });
 }
 
-function checkReciteParam() {
-  var params = new URLSearchParams(window.location.search);
-  var recite = params.get('recite');
-  var firstBubble = document.querySelector('.bubble.ai');
-  if (firstBubble) {
-    firstBubble.textContent = firstBubble.textContent + ' [RECITE-CHECK: ' + recite + ']';
-  }
-  if (recite === 'true') {
-    if (firstBubble) firstBubble.textContent += ' [D-CALLING-BANNER]';
-    showReciteBanner();
-  }
-}
-
-try{document.querySelector('.bubble.ai').textContent += ' [C-PRE-CALL]';}catch(e){}
-checkReciteParam();
+// Always show the tasks banner whenever the app opens
+showReciteBanner();
 
 // Scroll to bottom on resize (keyboard open/close)
 window.addEventListener('resize', () => {
