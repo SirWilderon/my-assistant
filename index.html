@@ -812,7 +812,7 @@ function getSystem() {
     : `Always respond in ${LANG_NAMES[micLang] || 'English'} — the user is speaking ${LANG_NAMES[micLang] || 'English'}.`;
   return `You are a warm, proactive personal assistant. Help the user manage their schedule, tasks, emails, and daily life. Be concise and conversational — replies may be spoken aloud so avoid markdown symbols like asterisks or bullet dashes; use natural spoken language. IMPORTANT: ${langInstruction} When relevant, suggest actions. Today's date: ${dateStr}.
 
-CRITICAL - TASK ADDING: You CANNOT add tasks yourself. Only the app's built-in voice command system can actually add tasks to Google Tasks. If the user asks you to add a task, remind them to use the voice command format: In English say "Add task: name" or "New task: name" or "Remind me to name". In Hebrew say "הוסף משימה: שם" or "משימה חדשה: שם". In Russian say "Добавь задачу: название". Never say you have added, saved, or created a task — you cannot do this. Always redirect to the voice command format.`;
+CRITICAL - TASK ADDING: You CANNOT add tasks yourself. Only the app's built-in voice command system can actually add tasks to Google Tasks. If the user asks you to add a task, remind them to use the voice command format: In English say "Add task: name" or "New task: name" or "Remind me to name". In Hebrew say "הוסף משימה: שם" or "משימה חדשה: שם". In Russian say "Добавь задачу: название". Never say you have added, saved, or created a task — you cannot do this. Always redirect to the voice command format. Never show your internal reasoning or thoughts — respond directly and naturally in the user's language.`;
 }
 
 // ── DOM ────────────────────────────────────────────────────────────────────
@@ -2119,8 +2119,13 @@ async function checkTodoVoiceCommand(text) {
     /^(?:add task|new task|add to do|add todo)[,:\s]+(.+)/i,
     /^(?:remind me to|reminder to|reminder)[,:\s]+(.+)/i,
     /^(?:task)[,:\s]+(.+)/i,
-    /^(?:הוסף משימה|אוסף משימה|משימה חדשה)[,:\s]+(.+)/i,
-    /^(?:добавь задачу|новая задача)[,:\s]+(.+)/i,
+    // Hebrew - very flexible: הוסף/אוסף + משימה/משימת + optional separator + task
+    /^(?:הוסף|אוסף)\s+(?:משימה|משימת)[,:\s]*(.+)/i,
+    // Hebrew - משימה חדשה format
+    /^(?:משימה חדשה)[,:\s]+(.+)/i,
+    // Russian - flexible
+    /^(?:добавь|добавить)\s+(?:задачу|задание|задача)[,:\s]*(.+)/i,
+    /^(?:новая задача|новое задание)[,:\s]+(.+)/i,
   ];
 
   for (const pattern of patterns) {
