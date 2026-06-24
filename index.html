@@ -2229,35 +2229,50 @@ async function reciteTodaysTasks() {
   }
 }
 
+function getVoicesReady() {
+  return new Promise(function(resolve) {
+    var voices = speechSynthesis.getVoices();
+    if (voices.length > 0) { resolve(voices); return; }
+    speechSynthesis.onvoiceschanged = function() {
+      resolve(speechSynthesis.getVoices());
+    };
+    // Fallback timeout in case onvoiceschanged never fires
+    setTimeout(function() { resolve(speechSynthesis.getVoices()); }, 1000);
+  });
+}
+
 function speakTaskList(tasks) {
   if (!tasks || tasks.length === 0) {
     speak('You have no tasks due today. Great job!');
     return;
   }
 
-  var voices = speechSynthesis.getVoices();
-  var introMap = {
-    'en-US': tasks.length === 1 ? 'You have one task due today.' : 'You have ' + tasks.length + ' tasks due today.',
-    'he-IL': 'יש לך ' + tasks.length + ' משימות להיום.',
-    'ru-RU': 'У вас ' + tasks.length + ' задач на сегодня.'
-  };
+  getVoicesReady().then(function(voices) {
+    var introMap = {
+      'en-US': tasks.length === 1 ? 'You have one task due today.' : 'You have ' + tasks.length + ' tasks due today.',
+      'he-IL': 'יש לך ' + tasks.length + ' משימות להיום.',
+      'ru-RU': 'У вас ' + tasks.length + ' задач на сегодня.'
+    };
 
-  // Speak intro in English by default
-  var introUtt = new SpeechSynthesisUtterance(introMap['en-US']);
-  introUtt.rate = speakRate;
-  var enVoice = voices.find(v => v.lang.startsWith('en'));
-  if (enVoice) introUtt.voice = enVoice;
-  speechSynthesis.speak(introUtt);
+    // Speak intro in English by default
+    var introUtt = new SpeechSynthesisUtterance(introMap['en-US']);
+    introUtt.rate = speakRate;
+    var enVoice = voices.find(function(v) { return v.lang.startsWith('en'); });
+    if (enVoice) introUtt.voice = enVoice;
+    introUtt.lang = 'en-US';
+    speechSynthesis.speak(introUtt);
 
-  // Speak each task in its own detected language
-  tasks.forEach(function(task) {
-    var utt = new SpeechSynthesisUtterance(task.title);
-    utt.rate = speakRate;
-    var langPrefix = task.lang.split('-')[0];
-    var matchedVoice = voices.find(v => v.lang.startsWith(langPrefix)) || voices.find(v => v.lang.startsWith('en'));
-    if (matchedVoice) utt.voice = matchedVoice;
-    utt.lang = task.lang;
-    speechSynthesis.speak(utt);
+    // Speak each task in its own detected language
+    tasks.forEach(function(task) {
+      var utt = new SpeechSynthesisUtterance(task.title);
+      utt.rate = speakRate;
+      var langPrefix = task.lang.split('-')[0];
+      var matchedVoice = voices.find(function(v) { return v.lang.startsWith(langPrefix); })
+                      || voices.find(function(v) { return v.lang.startsWith('en'); });
+      if (matchedVoice) utt.voice = matchedVoice;
+      utt.lang = task.lang;
+      speechSynthesis.speak(utt);
+    });
   });
 }
 
