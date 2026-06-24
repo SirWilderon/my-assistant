@@ -2189,7 +2189,8 @@ async function reciteTodaysTasks() {
     var token = localStorage.getItem('google_token');
     var expiry = localStorage.getItem('google_token_expiry');
     if (!token || !expiry || Date.now() > parseInt(expiry)) {
-      return null;
+      // Signal token expired to banner
+      return 'TOKEN_EXPIRED';
     }
     googleAccessToken = token;
 
@@ -2309,7 +2310,10 @@ function showReciteBanner() {
   reciteTodaysTasks().then(function(tasks) {
     prefetchedTasks = tasks;
     prefetchDone = true;
-    if (tasks && tasks.length > 0) {
+    if (tasks === 'TOKEN_EXPIRED') {
+      banner.textContent = '🔑 Tap to reconnect Google';
+      banner.style.background = '#e67e22';
+    } else if (tasks && tasks.length > 0) {
       banner.textContent = '🔊 ' + tasks.length + ' Tasks';
     } else {
       banner.textContent = '✅ Tasks';
@@ -2320,6 +2324,12 @@ function showReciteBanner() {
 
   banner.addEventListener('click', function() {
     if (prefetchDone) {
+      if (prefetchedTasks === 'TOKEN_EXPIRED') {
+        // Redirect to Google auth
+        localStorage.setItem('show_recite_banner', 'true');
+        window.location.href = 'https://sirwilderon.github.io/my-assistant/google-auth.html';
+        return;
+      }
       speakTaskList(prefetchedTasks);
       if (prefetchedTasks && prefetchedTasks.length > 0) {
         addBubble('ai', 'Tasks due today: ' + prefetchedTasks.map(function(t) { return t.title; }).join(', '));
