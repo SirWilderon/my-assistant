@@ -783,6 +783,7 @@ if ('serviceWorker' in navigator) {
 <script>
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
+var EXCHANGE_BRIDGE = 'http://192.168.1.121:3001';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
 var MS_SCOPES = 'Tasks.Read Tasks.ReadWrite User.Read offline_access';
 
@@ -2176,6 +2177,18 @@ async function checkTodoVoiceCommand(text) {
 
 
 // ── Auto-recite tasks on home screen launch ────────────────────────────────
+async function fetchExchangeToday() {
+  try {
+    var res = await fetch(EXCHANGE_BRIDGE + '/exchange-today', { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return [];
+    var data = await res.json();
+    return data.events || [];
+  } catch(e) {
+    console.log('Exchange bridge not reachable:', e.message);
+    return [];
+  }
+}
+
 function detectTaskLanguage(text) {
   // Hebrew characters
   if (/[\u0590-\u05FF]/.test(text)) return 'he-IL';
@@ -2223,6 +2236,14 @@ async function reciteTodaysTasks() {
       }
     }
 
+    // Also fetch Exchange calendar events for today
+    var exchangeEvents = await fetchExchangeToday();
+    exchangeEvents.forEach(function(ev) {
+      if (ev.subject) {
+        dueTasks.push({ title: ev.subject, lang: detectTaskLanguage(ev.subject), isEvent: true, time: ev.start });
+      }
+    });
+
     return dueTasks; // array of {title, lang}, empty array if none
   } catch(e) {
     console.error('Recite error:', e);
@@ -2244,36 +2265,46 @@ function getVoicesReady() {
 
 function speakTaskList(tasks) {
   if (!tasks || tasks.length === 0) {
-    speak('You have no tasks due today. Great job!');
+    speak('You have no tasks or events due today. Great job!');
     return;
   }
 
   getVoicesReady().then(function(voices) {
-    var introMap = {
-      'en-US': tasks.length === 1 ? 'You have one task due today.' : 'You have ' + tasks.length + ' tasks due today.',
-      'he-IL': 'יש לך ' + tasks.length + ' משימות להיום.',
-      'ru-RU': 'У вас ' + tasks.length + ' задач на сегодня.'
-    };
+    var dueTasks = tasks.filter(function(t) { return !t.isEvent; });
+    var events = tasks.filter(function(t) { return t.isEvent; });
 
-    // Speak intro in English by default
-    var introUtt = new SpeechSynthesisUtterance(introMap['en-US']);
-    introUtt.rate = speakRate;
     var enVoice = voices.find(function(v) { return v.lang.startsWith('en'); });
-    if (enVoice) introUtt.voice = enVoice;
-    introUtt.lang = 'en-US';
-    speechSynthesis.speak(introUtt);
 
-    // Speak each task in its own detected language
-    tasks.forEach(function(task) {
-      var utt = new SpeechSynthesisUtterance(task.title);
+    function speakUtt(text, lang) {
+      var utt = new SpeechSynthesisUtterance(text);
       utt.rate = speakRate;
-      var langPrefix = task.lang.split('-')[0];
-      var matchedVoice = voices.find(function(v) { return v.lang.startsWith(langPrefix); })
-                      || voices.find(function(v) { return v.lang.startsWith('en'); });
-      if (matchedVoice) utt.voice = matchedVoice;
-      utt.lang = task.lang;
+      utt.lang = lang || 'en-US';
+      var langPrefix = (lang || 'en').split('-')[0];
+      var voice = voices.find(function(v) { return v.lang.startsWith(langPrefix); }) || enVoice;
+      if (voice) utt.voice = voice;
       speechSynthesis.speak(utt);
-    });
+    }
+
+    // Announce tasks
+    if (dueTasks.length > 0) {
+      speakUtt(dueTasks.length === 1 ? 'You have one task due today.' : 'You have ' + dueTasks.length + ' tasks due today.', 'en-US');
+      dueTasks.forEach(function(task) {
+        speakUtt(task.title, task.lang);
+      });
+    }
+
+    // Announce Exchange calendar events
+    if (events.length > 0) {
+      speakUtt(events.length === 1 ? 'You have one meeting today.' : 'You have ' + events.length + ' meetings today.', 'en-US');
+      events.forEach(function(ev) {
+        var timeStr = ev.time ? new Date(ev.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ': ' : '';
+        speakUtt(timeStr + ev.title, ev.lang);
+      });
+    }
+
+    if (dueTasks.length === 0 && events.length === 0) {
+      speakUtt('You have no tasks or meetings today. Great job!', 'en-US');
+    }
   });
 }
 
@@ -2314,7 +2345,12 @@ function showReciteBanner() {
       banner.textContent = '🔑 Tap to reconnect Google';
       banner.style.background = '#e67e22';
     } else if (tasks && tasks.length > 0) {
-      banner.textContent = '🔊 ' + tasks.length + ' Tasks';
+      var taskCount = tasks.filter(function(t) { return !t.isEvent; }).length;
+      var eventCount = tasks.filter(function(t) { return t.isEvent; }).length;
+      var parts = [];
+      if (taskCount > 0) parts.push(taskCount + ' Tasks');
+      if (eventCount > 0) parts.push(eventCount + ' Meetings');
+      banner.textContent = '🔊 ' + parts.join(' · ');
     } else {
       banner.textContent = '✅ Tasks';
     }
