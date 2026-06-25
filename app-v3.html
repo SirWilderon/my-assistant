@@ -2373,6 +2373,7 @@ function showReciteBanner() {
         window.location.href = 'https://sirwilderon.github.io/my-assistant/google-auth.html';
         return;
       }
+      addBubble('ai', 'DEBUG tap: prefetchedTasks=' + JSON.stringify(prefetchedTasks).substring(0, 300));
       speakTaskList(prefetchedTasks);
       if (prefetchedTasks && prefetchedTasks.length > 0) {
         addBubble('ai', 'Tasks due today: ' + prefetchedTasks.map(function(t) { return t.title; }).join(', '));
