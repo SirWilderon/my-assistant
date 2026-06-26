@@ -701,8 +701,10 @@ if ('serviceWorker' in navigator) {
   <div id="igor-banner" style="display:flex;gap:6px;padding:6px 10px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;">
     <span style="font-size:11px;color:var(--text-dim);flex-shrink:0;">🎭 Igor Voice:</span>
     <input type="password" id="el-key-input" placeholder="ElevenLabs API key" autocomplete="off" style="flex:1;min-width:120px;font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-    <input type="text" id="el-voice-input" placeholder="Voice ID" autocomplete="off" style="flex:1;min-width:100px;font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
-    <button class="btn primary" id="save-igor-btn" style="font-size:11px;padding:4px 10px;" ontouchstart="event.preventDefault();saveIgorSettings();" onclick="saveIgorSettings();">Save</button>
+    <div style="display:flex;gap:6px;width:100%;">
+      <input type="text" id="el-voice-input" placeholder="Voice ID" autocomplete="off" style="flex:1;font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+      <button class="btn primary" id="save-igor-btn" style="font-size:11px;padding:4px 10px;" ontouchstart="event.preventDefault();saveIgorSettings();" onclick="saveIgorSettings();">Save</button>
+    </div>
   </div>
 
   <!-- Messages -->
@@ -2392,7 +2394,7 @@ function showReciteBanner() {
   var banner = document.createElement('div');
   banner.id = 'recite-banner';
   banner.style.position = 'fixed';
-  banner.style.top = '130px';
+  banner.style.top = '170px';
   banner.style.right = '14px';
   banner.style.zIndex = '99999';
   banner.style.background = '#4f8ef7';
