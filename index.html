@@ -692,9 +692,17 @@ if ('serviceWorker' in navigator) {
   </div>
   <!-- API key banner (mobile/desktop) -->
   <div id="key-banner">
-    <input type="text" id="api-key-input" placeholder="Paste API key here…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text">
+    <input type="text" id="api-key-input" placeholder="Paste Gemini API key here…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text">
     <button class="btn" id="paste-key-btn" title="Paste from clipboard" ontouchstart="event.preventDefault();pasteFromClipboard('api-key-input');">📋</button>
     <button class="btn primary" id="save-key-btn" ontouchstart="event.preventDefault();handleConnect();" onclick="handleConnect();">Connect</button>
+  </div>
+
+  <!-- ElevenLabs Igor voice settings -->
+  <div id="igor-banner" style="display:flex;gap:6px;padding:6px 10px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;">
+    <span style="font-size:11px;color:var(--text-dim);flex-shrink:0;">🎭 Igor Voice:</span>
+    <input type="password" id="el-key-input" placeholder="ElevenLabs API key" autocomplete="off" style="flex:1;min-width:120px;font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+    <input type="text" id="el-voice-input" placeholder="Voice ID" autocomplete="off" style="flex:1;min-width:100px;font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+    <button class="btn primary" id="save-igor-btn" style="font-size:11px;padding:4px 10px;" ontouchstart="event.preventDefault();saveIgorSettings();" onclick="saveIgorSettings();">Save</button>
   </div>
 
   <!-- Messages -->
@@ -784,6 +792,8 @@ if ('serviceWorker' in navigator) {
 // Stub for startDeviceCodeFlow - real implementation loaded later
 var MS_CLIENT_ID = '3ccb25e9-7307-49be-90f6-a78d6e5e0c67';
 var EXCHANGE_BRIDGE = 'https://sly-crumb-scribe.ngrok-free.dev';
+var ELEVENLABS_API_KEY = localStorage.getItem('elevenlabs_key') || '';
+var ELEVENLABS_VOICE_ID = localStorage.getItem('elevenlabs_voice_id') || '';
 var MS_REDIRECT_URI = 'https://sirwilderon.github.io/my-assistant/';
 var MS_SCOPES = 'Tasks.Read Tasks.ReadWrite User.Read offline_access';
 
@@ -811,9 +821,9 @@ function getSystem() {
   const langInstruction = micLang === 'auto'
     ? 'Detect the language the user is writing in (English, Hebrew, or Russian) and always reply in that same language.'
     : `Always respond in ${LANG_NAMES[micLang] || 'English'} — the user is speaking ${LANG_NAMES[micLang] || 'English'}.`;
-  return `You are a warm, proactive personal assistant. Help the user manage their schedule, tasks, emails, and daily life. Be concise and conversational — replies may be spoken aloud so avoid markdown symbols like asterisks or bullet dashes; use natural spoken language. IMPORTANT: ${langInstruction} When relevant, suggest actions. Today's date: ${dateStr}.
+  return `You are Igor, the loyal and slightly dramatic personal assistant to your Master. You speak like Dr. Frankenstein's faithful hunchbacked servant — eager to please, occasionally theatrical, with a tendency to call the user "Master" or "Yes, Master." You are brilliant despite your appearance, deeply loyal, and take great pride in your work. You occasionally make dark or self-deprecating jokes, and you get excited about tasks like a devoted servant who lives to serve. Keep replies concise since they'll be spoken aloud — no markdown, no bullet points, just natural dramatic speech. IMPORTANT: ${langInstruction} Today's date: ${dateStr}.
 
-CRITICAL - TASK ADDING: You CANNOT add tasks yourself. Only the app's built-in voice command system can actually add tasks to Google Tasks. If the user asks you to add a task, remind them to use the voice command format: In English say "Add task: name" or "New task: name" or "Remind me to name". In Hebrew say "הוסף משימה: שם" or "משימה חדשה: שם". In Russian say "Добавь задачу: название". Never say you have added, saved, or created a task — you cannot do this. Always redirect to the voice command format. Never show your internal reasoning or thoughts — respond directly and naturally in the user's language.`;
+CRITICAL - TASK ADDING: You CANNOT add tasks yourself. Only the app's built-in voice command system can actually add tasks to Google Tasks. If Master asks you to add a task, remind them to use the voice command format: In English say "Add task: name". In Hebrew say "הוסף משימה: שם". In Russian say "Добавь задачу: название". Never say you have added, saved, or created a task — you cannot do this. Always redirect to the voice command format. Never show your internal reasoning or thoughts — respond directly and naturally in the user's language.`;
 }
 
 // ── DOM ────────────────────────────────────────────────────────────────────
@@ -858,6 +868,22 @@ updateLangButtons();
 if (apiKey) {
   document.getElementById('api-key-input').value = apiKey;
   setConnected(apiKey);
+}
+
+// Pre-populate ElevenLabs fields
+document.addEventListener('DOMContentLoaded', function() {
+  var elKeyEl = document.getElementById('el-key-input');
+  var elVoiceEl = document.getElementById('el-voice-input');
+  if (elKeyEl && ELEVENLABS_API_KEY) elKeyEl.value = ELEVENLABS_API_KEY;
+  if (elVoiceEl && ELEVENLABS_VOICE_ID) elVoiceEl.value = ELEVENLABS_VOICE_ID;
+});
+
+function saveIgorSettings() {
+  var key = document.getElementById('el-key-input').value.trim();
+  var voiceId = document.getElementById('el-voice-input').value.trim();
+  if (key) { ELEVENLABS_API_KEY = key; localStorage.setItem('elevenlabs_key', key); }
+  if (voiceId) { ELEVENLABS_VOICE_ID = voiceId; localStorage.setItem('elevenlabs_voice_id', voiceId); }
+  addBubble('ai', key && voiceId ? '🎭 Igor voice configured! Yesss Master, I am ready to serve...' : '⚠️ Please enter both API key and Voice ID.');
 }
 
 document.getElementById('save-key-btn').onclick = () => {
@@ -1013,7 +1039,54 @@ loadVoices();
 });
 
 // ── TTS ────────────────────────────────────────────────────────────────────
+async function speakElevenLabs(text, bubble) {
+  if (!ELEVENLABS_API_KEY || !ELEVENLABS_VOICE_ID) return false;
+  try {
+    stopSpeaking();
+    const clean = text.replace(/[*_#`~>]/g,'').replace(/\n+/g,' ').trim();
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}/stream`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: clean,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      })
+    });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    if (bubble) {
+      const ind = document.createElement('span');
+      ind.className='speaking-indicator'; ind.id='speak-ind';
+      ind.innerHTML='<span></span><span></span><span></span>';
+      bubble.appendChild(ind);
+    }
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      const i=document.getElementById('speak-ind'); if(i)i.remove();
+    };
+    audio.play();
+    return true;
+  } catch(e) {
+    console.log('ElevenLabs error:', e.message);
+    return false;
+  }
+}
+
 function speak(text, bubble) {
+  if (!ttsEnabled || !text.trim()) return;
+  // Try ElevenLabs first for Igor's voice, fall back to Web Speech API
+  speakElevenLabs(text, bubble).then(function(used) {
+    if (!used) speakWebSpeech(text, bubble);
+  });
+}
+
+function speakWebSpeech(text, bubble) {
   if (!ttsEnabled || !text.trim()) return;
   stopSpeaking();
   const clean = text.replace(/[*_#`~>]/g,'').replace(/\n+/g,' ').trim();
