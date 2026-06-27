@@ -820,8 +820,11 @@ let micLang = localStorage.getItem('mic_lang') || 'en-US';
 const LANG_NAMES = { 'en-US': 'English', 'he-IL': 'Hebrew', 'ru-RU': 'Russian', 'auto': 'auto' };
 async function getContext() {
   var parts = [];
+  var today = new Date(); today.setHours(0,0,0,0);
+  var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  var nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 7);
 
-  // Google Tasks (due today or overdue)
+  // Google Tasks
   try {
     var token = localStorage.getItem('google_token');
     var expiry = localStorage.getItem('google_token_expiry');
@@ -830,9 +833,7 @@ async function getContext() {
         headers: { Authorization: 'Bearer ' + token }
       });
       var listsData = await listsRes.json();
-      var today = new Date(); today.setHours(0,0,0,0);
-      var dueTasks = [];
-      var upcomingTasks = [];
+      var overdueTasks = [], todayTasks = [], tomorrowTasks = [], upcomingTasks = [], noDateTasks = [];
       for (var list of (listsData.items || [])) {
         var res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + list.id + '/tasks?showCompleted=false', {
           headers: { Authorization: 'Bearer ' + token }
@@ -841,19 +842,25 @@ async function getContext() {
         for (var t of (data.items || [])) {
           if (t.due) {
             var d = new Date(t.due); d.setHours(0,0,0,0);
-            if (d <= today) dueTasks.push(t.title);
+            if (d < today) overdueTasks.push(t.title + ' (overdue since ' + d.toLocaleDateString() + ')');
+            else if (d.getTime() === today.getTime()) todayTasks.push(t.title);
+            else if (d.getTime() === tomorrow.getTime()) tomorrowTasks.push(t.title);
+            else if (d <= nextWeek) upcomingTasks.push(t.title + ' (due ' + d.toLocaleDateString() + ')');
             else upcomingTasks.push(t.title + ' (due ' + d.toLocaleDateString() + ')');
           } else {
-            upcomingTasks.push(t.title + ' (no due date)');
+            noDateTasks.push(t.title);
           }
         }
       }
-      if (dueTasks.length) parts.push('OVERDUE/DUE TODAY TASKS:\n' + dueTasks.join('\n'));
-      if (upcomingTasks.length) parts.push('UPCOMING TASKS:\n' + upcomingTasks.join('\n'));
+      if (overdueTasks.length) parts.push('OVERDUE TASKS:\n' + overdueTasks.join('\n'));
+      if (todayTasks.length) parts.push('DUE TODAY:\n' + todayTasks.join('\n'));
+      if (tomorrowTasks.length) parts.push('DUE TOMORROW:\n' + tomorrowTasks.join('\n'));
+      if (upcomingTasks.length) parts.push('UPCOMING TASKS (next 7 days):\n' + upcomingTasks.join('\n'));
+      if (noDateTasks.length) parts.push('TASKS (no due date):\n' + noDateTasks.join('\n'));
     }
   } catch(e) { console.log('Context: Google Tasks error', e.message); }
 
-  // Exchange calendar (today)
+  // Exchange calendar (today + upcoming 7 days)
   try {
     var exRes = await fetch(EXCHANGE_BRIDGE + '/exchange-today', {
       headers: { 'ngrok-skip-browser-warning': 'true' },
@@ -861,13 +868,27 @@ async function getContext() {
     });
     if (exRes.ok) {
       var exData = await exRes.json();
-      var events = (exData.events || []).map(function(ev) {
+      var todayEvents = (exData.events || []).map(function(ev) {
         var timeStr = ev.start ? new Date(ev.start).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
         return (timeStr ? timeStr + ' - ' : '') + ev.subject;
       });
-      if (events.length) parts.push('TODAY\'S WORK CALENDAR (Exchange):\n' + events.join('\n'));
+      if (todayEvents.length) parts.push('TODAY\'S WORK CALENDAR:\n' + todayEvents.join('\n'));
     }
-  } catch(e) { console.log('Context: Exchange error', e.message); }
+  } catch(e) { console.log('Context: Exchange today error', e.message); }
+
+  // Exchange upcoming events
+  try {
+    var exUpRes = await fetch(EXCHANGE_BRIDGE + '/exchange-upcoming?days=7', {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (exUpRes.ok) {
+      var exUpData = await exUpRes.json();
+      if (typeof exUpData.events === 'string' && exUpData.events.trim()) {
+        parts.push('UPCOMING WORK CALENDAR (next 7 days):\n' + exUpData.events);
+      }
+    }
+  } catch(e) { console.log('Context: Exchange upcoming error', e.message); }
 
   return parts.length ? parts.join('\n\n') : '';
 }
