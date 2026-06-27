@@ -2343,45 +2343,57 @@ function getVoicesReady() {
 
 function speakTaskList(tasks) {
   if (!tasks || tasks.length === 0) {
-    speak('You have no tasks or events due today. Great job!');
+    speak('You have no tasks or events due today. Great job, Master!');
     return;
   }
 
-  getVoicesReady().then(function(voices) {
-    var dueTasks = tasks.filter(function(t) { return !t.isEvent; });
-    var events = tasks.filter(function(t) { return t.isEvent; });
+  var dueTasks = tasks.filter(function(t) { return !t.isEvent; });
+  var events = tasks.filter(function(t) { return t.isEvent; });
 
-    var enVoice = voices.find(function(v) { return v.lang.startsWith('en'); });
+  // Build the full speech text for Igor
+  var parts = [];
 
-    function speakUtt(text, lang) {
-      var utt = new SpeechSynthesisUtterance(text);
-      utt.rate = speakRate;
-      utt.lang = lang || 'en-US';
-      var langPrefix = (lang || 'en').split('-')[0];
-      var voice = voices.find(function(v) { return v.lang.startsWith(langPrefix); }) || enVoice;
-      if (voice) utt.voice = voice;
-      speechSynthesis.speak(utt);
-    }
+  if (dueTasks.length > 0) {
+    parts.push(dueTasks.length === 1 ? 'Master, you have one task due today:' : 'Master, you have ' + dueTasks.length + ' tasks due today:');
+    dueTasks.forEach(function(task) { parts.push(task.title); });
+  }
 
-    // Announce tasks
-    if (dueTasks.length > 0) {
-      speakUtt(dueTasks.length === 1 ? 'You have one task due today.' : 'You have ' + dueTasks.length + ' tasks due today.', 'en-US');
-      dueTasks.forEach(function(task) {
-        speakUtt(task.title, task.lang);
+  if (events.length > 0) {
+    parts.push(events.length === 1 ? 'And one meeting on your calendar:' : 'And ' + events.length + ' meetings on your calendar:');
+    events.forEach(function(ev) {
+      var timeStr = ev.time ? new Date(ev.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ': ' : '';
+      parts.push(timeStr + ev.title);
+    });
+  }
+
+  var fullText = parts.join(' ');
+
+  // Try ElevenLabs first (handles Hebrew/Russian via multilingual model)
+  speakElevenLabs(fullText).then(function(used) {
+    if (!used) {
+      // Fallback: use Web Speech API per-task for language support
+      getVoicesReady().then(function(voices) {
+        var enVoice = voices.find(function(v) { return v.lang.startsWith('en'); });
+        function speakUtt(text, lang) {
+          var utt = new SpeechSynthesisUtterance(text);
+          utt.rate = speakRate;
+          utt.lang = lang || 'en-US';
+          var voice = voices.find(function(v) { return v.lang.startsWith((lang||'en').split('-')[0]); }) || enVoice;
+          if (voice) utt.voice = voice;
+          speechSynthesis.speak(utt);
+        }
+        if (dueTasks.length > 0) {
+          speakUtt(dueTasks.length === 1 ? 'You have one task due today.' : 'You have ' + dueTasks.length + ' tasks due today.', 'en-US');
+          dueTasks.forEach(function(t) { speakUtt(t.title, t.lang); });
+        }
+        if (events.length > 0) {
+          speakUtt(events.length === 1 ? 'One meeting today.' : events.length + ' meetings today.', 'en-US');
+          events.forEach(function(ev) {
+            var timeStr = ev.time ? new Date(ev.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ': ' : '';
+            speakUtt(timeStr + ev.title, ev.lang);
+          });
+        }
       });
-    }
-
-    // Announce Exchange calendar events
-    if (events.length > 0) {
-      speakUtt(events.length === 1 ? 'You have one meeting today.' : 'You have ' + events.length + ' meetings today.', 'en-US');
-      events.forEach(function(ev) {
-        var timeStr = ev.time ? new Date(ev.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ': ' : '';
-        speakUtt(timeStr + ev.title, ev.lang);
-      });
-    }
-
-    if (dueTasks.length === 0 && events.length === 0) {
-      speakUtt('You have no tasks or meetings today. Great job!', 'en-US');
     }
   });
 }
