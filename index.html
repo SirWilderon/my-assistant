@@ -1151,12 +1151,19 @@ async function speakElevenLabs(text, bubble) {
       ind.innerHTML='<span></span><span></span><span></span>';
       bubble.appendChild(ind);
     }
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      const i=document.getElementById('speak-ind'); if(i)i.remove();
-    };
-    audio.play();
-    return true;
+    // Return a Promise that resolves when audio finishes
+    return new Promise(function(resolve) {
+      audio.onended = function() {
+        URL.revokeObjectURL(url);
+        const i=document.getElementById('speak-ind'); if(i)i.remove();
+        resolve(true);
+      };
+      audio.onerror = function() {
+        URL.revokeObjectURL(url);
+        resolve(false);
+      };
+      audio.play();
+    });
   } catch(e) {
     console.log('ElevenLabs error:', e.message);
     return false;
@@ -2480,35 +2487,50 @@ function speakTaskList(tasks) {
 
   var igorText = igorParts.join(' ');
 
-  // Speak Igor's part via ElevenLabs
+  // Speak Igor's part via ElevenLabs, then wait for it to finish before speaking non-English tasks
   speakElevenLabs(igorText).then(function(usedElevenLabs) {
-    var igorDelay = usedElevenLabs ? igorText.length * 60 : 0;
-
     if (!usedElevenLabs) {
       // Fallback to web speech for the intro
       speakWebSpeech(igorText, null);
     }
 
-    // After Igor finishes, speak non-English tasks with system voice
+    // After Igor finishes (Promise resolved), speak non-English tasks with system voice
     if (nonEnglishTasks.length > 0 || nonEnglishEvents.length > 0) {
-      setTimeout(function() {
-        getVoicesReady().then(function(voices) {
-          var enVoice = voices.find(function(v) { return v.lang.startsWith('en'); });
-          function speakUtt(text, lang) {
-            var utt = new SpeechSynthesisUtterance(text);
-            utt.rate = speakRate;
-            utt.lang = lang || 'en-US';
-            var voice = voices.find(function(v) { return v.lang.startsWith((lang||'en').split('-')[0]); }) || enVoice;
-            if (voice) utt.voice = voice;
-            speechSynthesis.speak(utt);
-          }
-          nonEnglishTasks.forEach(function(t) { speakUtt(t.title, t.lang); });
-          nonEnglishEvents.forEach(function(ev) {
-            var timeStr = ev.time ? new Date(ev.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ': ' : '';
-            speakUtt(timeStr + ev.title, ev.lang);
-          });
+      getVoicesReady().then(function(voices) {
+        var enVoice = voices.find(function(v) { return v.lang.startsWith('en'); });
+
+        // Build a queue of utterances and speak them sequentially
+        var queue = [];
+        nonEnglishTasks.forEach(function(t) { queue.push({ text: t.title, lang: t.lang }); });
+        nonEnglishEvents.forEach(function(ev) {
+          var timeStr = ev.time ? new Date(ev.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ': ' : '';
+          queue.push({ text: timeStr + ev.title, lang: ev.lang });
         });
-      }, igorDelay);
+
+        function speakNext(index) {
+          if (index >= queue.length) return;
+          var item = queue[index];
+          var utt = new SpeechSynthesisUtterance(item.text);
+          utt.rate = speakRate;
+          utt.lang = item.lang || 'en-US';
+          var voice = voices.find(function(v) { return v.lang.startsWith((item.lang||'en').split('-')[0]); }) || enVoice;
+          if (voice) utt.voice = voice;
+          utt.onend = function() { speakNext(index + 1); };
+          utt.onerror = function() { speakNext(index + 1); };
+          speechSynthesis.speak(utt);
+        }
+
+        // If Igor used ElevenLabs, start immediately (already waited via Promise)
+        // If Igor used Web Speech, wait for speech queue to clear
+        if (usedElevenLabs) {
+          speakNext(0);
+        } else {
+          // Web Speech is queued — add a small pause utterance then our items
+          var pause = new SpeechSynthesisUtterance(' ');
+          pause.onend = function() { speakNext(0); };
+          speechSynthesis.speak(pause);
+        }
+      });
     }
   });
 }
