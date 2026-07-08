@@ -860,6 +860,32 @@ async function getContext() {
     }
   } catch(e) { console.log('Context: Google Tasks error', e.message); }
 
+  // Google Calendar events (today + next 7 days)
+  try {
+    var token2 = localStorage.getItem('google_token');
+    var expiry2 = localStorage.getItem('google_token_expiry');
+    if (token2 && expiry2 && Date.now() < parseInt(expiry2)) {
+      var calRes = await fetch(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events' +
+        '?timeMin=' + today.toISOString() +
+        '&timeMax=' + new Date(nextWeek.getTime() + 86400000).toISOString() +
+        '&singleEvents=true&orderBy=startTime&maxResults=20',
+        { headers: { Authorization: 'Bearer ' + token2 } }
+      );
+      if (calRes.ok) {
+        var calData = await calRes.json();
+        var calEvents = (calData.items || []).map(function(ev) {
+          var start = ev.start.dateTime || ev.start.date;
+          var startDate = new Date(start);
+          var dateStr = startDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+          var timeStr = ev.start.dateTime ? startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'All day';
+          return dateStr + ' ' + timeStr + ' — ' + ev.summary;
+        });
+        if (calEvents.length) parts.push('GOOGLE CALENDAR (next 7 days):\n' + calEvents.join('\n'));
+      }
+    }
+  } catch(e) { console.log('Context: Google Calendar error', e.message); }
+
   // Exchange calendar (today + upcoming 7 days)
   try {
     var exRes = await fetch(EXCHANGE_BRIDGE + '/exchange-today', {
@@ -2292,19 +2318,107 @@ async function completeTodoTask(listId, taskId, el) {
 }
 
 // ── Voice command detection for adding tasks ───────────────────────────────
+// Pending task waiting for due date
+var pendingTask = null;
+
+async function extractDueDateWithAI(taskTitle, fullText) {
+  if (!apiKey) return null;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: `Today is ${today}. Extract a due date from the user's message. Return ONLY a date in YYYY-MM-DD format, or null if no date is mentioned. Examples: "tomorrow" → next day, "Friday" → next Friday, "next week" → 7 days from now, "ביום שישי" → next Friday, "в пятницу" → next Friday.` }] },
+        contents: [{ role: 'user', parts: [{ text: fullText }] }],
+        generationConfig: { maxOutputTokens: 20, temperature: 0 }
+      })
+    });
+    const data = await res.json();
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (result && result !== 'null' && /^\d{4}-\d{2}-\d{2}$/.test(result)) return result;
+    return null;
+  } catch(e) { return null; }
+}
+
+async function addGoogleTaskWithDate(taskTitle, dueDate) {
+  if (!googleAccessToken) {
+    const saved = localStorage.getItem('google_token');
+    const expiry = localStorage.getItem('google_token_expiry');
+    if (saved && expiry && Date.now() < parseInt(expiry)) googleAccessToken = saved;
+  }
+  if (!googleAccessToken) {
+    addBubble('ai', '⚠️ Please connect Google first — tap the 📅G button.');
+    return false;
+  }
+  const listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=1', {
+    headers: { Authorization: 'Bearer ' + googleAccessToken }
+  });
+  const listsData = await listsRes.json();
+  const listId = listsData.items?.[0]?.id || '@default';
+  const listName = listsData.items?.[0]?.title || 'Tasks';
+
+  const body = { title: taskTitle };
+  if (dueDate) body.due = new Date(dueDate + 'T00:00:00Z').toISOString();
+
+  const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + listId + '/tasks', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const task = await res.json();
+  if (task.id) {
+    const lang = detectTaskLanguage(taskTitle);
+    const dateStr = dueDate ? new Date(dueDate + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) : null;
+    const confirmMsg = lang === 'he-IL'
+      ? '✅ המשימה "' + taskTitle + '"' + (dateStr ? ' עם תאריך יעד ' + dateStr : '') + ' נוספה!'
+      : lang === 'ru-RU'
+      ? '✅ Задача "' + taskTitle + '"' + (dateStr ? ' со сроком ' + dateStr : '') + ' добавлена!'
+      : '✅ Added "' + taskTitle + '"' + (dateStr ? ' due ' + dateStr : '') + ' to ' + listName;
+    addBubble('ai', confirmMsg);
+    speak(confirmMsg);
+    return true;
+  }
+  addBubble('ai', '❌ Could not add task.');
+  return false;
+}
+
 async function checkTodoVoiceCommand(text) {
   const lower = text.toLowerCase().trim();
 
-  // Patterns - flexible, no colon required
+  // Check if this is a response to a pending due date request
+  if (pendingTask) {
+    const dateResponse = await extractDueDateWithAI(pendingTask, text);
+    if (dateResponse) {
+      const task = pendingTask;
+      pendingTask = null;
+      await addGoogleTaskWithDate(task, dateResponse);
+      return true;
+    }
+    const noDuePatterns = [/no date|no due|without date|someday|anytime|asap/i, /ללא תאריך|בלי תאריך/i, /без даты|когда-нибудь/i];
+    if (noDuePatterns.some(p => p.test(text))) {
+      const task = pendingTask;
+      pendingTask = null;
+      await addGoogleTaskWithDate(task, null);
+      return true;
+    }
+    const lang = detectTaskLanguage(pendingTask);
+    const prompt = lang === 'he-IL'
+      ? 'Master, אנא ציין תאריך יעד למשימה "' + pendingTask + '" (מחר, ביום שישי, ללא תאריך...)'
+      : lang === 'ru-RU'
+      ? 'Master, укажите срок для задачи "' + pendingTask + '" (завтра, в пятницу, без даты...)'
+      : 'Yesss Master! When is "' + pendingTask + '" due? (tomorrow, Friday, no date...)';
+    addBubble('ai', prompt);
+    speak(prompt);
+    return true;
+  }
+
   const patterns = [
     /^(?:add task|new task|add to do|add todo)[,:\s]+(.+)/i,
     /^(?:remind me to|reminder to|reminder)[,:\s]+(.+)/i,
     /^(?:task)[,:\s]+(.+)/i,
-    // Hebrew - very flexible: הוסף/אוסף + משימה/משימת + optional separator + task
     /^(?:הוסף|אוסף)\s+(?:משימה|משימת)[,:\s]*(.+)/i,
-    // Hebrew - משימה חדשה format
     /^(?:משימה חדשה)[,:\s]+(.+)/i,
-    // Russian - flexible
     /^(?:добавь|добавить)\s+(?:задачу|задание|задача)[,:\s]*(.+)/i,
     /^(?:новая задача|новое задание)[,:\s]+(.+)/i,
   ];
@@ -2313,41 +2427,19 @@ async function checkTodoVoiceCommand(text) {
     const match = text.match(pattern);
     if (match) {
       const taskTitle = match[1].trim();
-      // Add to Google Tasks (works reliably from browser)
-      try {
-        // Try localStorage fallback if variable not set
-        if (!googleAccessToken) {
-          const saved = localStorage.getItem('google_token');
-          const expiry = localStorage.getItem('google_token_expiry');
-          if (saved && expiry && Date.now() < parseInt(expiry)) {
-            googleAccessToken = saved;
-          }
-        }
-        if (!googleAccessToken) {
-          addBubble('ai', '⚠️ Please connect Google first — tap the 📅G button to sign in.');
-          return true;
-        }
-        // Get default task list first
-        const listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=1', {
-          headers: { Authorization: 'Bearer ' + googleAccessToken }
-        });
-        const listsData = await listsRes.json();
-        const listName = listsData.items?.[0]?.title || 'Unknown';
-        const listId = listsData.items?.[0]?.id || '@default';
-        
-        const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + listId + '/tasks', {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: taskTitle })
-        });
-        const task = await res.json();
-        if (task.id) {
-          addBubble('ai', '✅ Added to Google Tasks list "' + listName + '": "' + taskTitle + '" (ID: ' + task.id.substring(0,8) + ')');
-        } else {
-          addBubble('ai', '❌ Could not add task: ' + JSON.stringify(task.error || task));
-        }
-      } catch(e) {
-        addBubble('ai', '❌ Error adding task: ' + e.message);
+      const dueDate = await extractDueDateWithAI(taskTitle, text);
+      if (dueDate) {
+        await addGoogleTaskWithDate(taskTitle, dueDate);
+      } else {
+        pendingTask = taskTitle;
+        const lang = detectTaskLanguage(taskTitle);
+        const prompt = lang === 'he-IL'
+          ? 'כן, Master! מתי צריך לבצע את "' + taskTitle + '"? (מחר, ביום שישי, ללא תאריך...)'
+          : lang === 'ru-RU'
+          ? 'Да, Master! Когда нужно выполнить "' + taskTitle + '"? (завтра, в пятницу, без даты...)'
+          : 'Yesss Master! When is "' + taskTitle + '" due? (tomorrow, Friday, no date...)';
+        addBubble('ai', prompt);
+        speak(prompt);
       }
       return true;
     }
