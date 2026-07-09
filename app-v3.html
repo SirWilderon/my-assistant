@@ -2318,11 +2318,43 @@ async function completeTodoTask(listId, taskId, el) {
 }
 
 // ── Voice command detection for adding tasks ───────────────────────────────
-// Pending task waiting for due date - stored in sessionStorage to survive mic reloads
-function getPendingTask() { return sessionStorage.getItem('pendingTask'); }
-function setPendingTask(val) { if (val) sessionStorage.setItem('pendingTask', val); else sessionStorage.removeItem('pendingTask'); }
+function showDatePicker(taskTitle) {
+  // Remove any existing date picker
+  var existing = document.getElementById('task-date-picker');
+  if (existing) existing.remove();
 
-async function extractDueDateWithAI(taskTitle, fullText) {
+  var today = new Date().toISOString().split('T')[0];
+  var picker = document.createElement('div');
+  picker.id = 'task-date-picker';
+  picker.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:20px;z-index:99999;width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.5);';
+
+  var lang = detectTaskLanguage(taskTitle);
+  var title = lang === 'he-IL' ? 'מתי צריך לבצע את המשימה?' : lang === 'ru-RU' ? 'Когда выполнить задачу?' : 'When is this due?';
+  var addBtn = lang === 'he-IL' ? 'הוסף משימה' : lang === 'ru-RU' ? 'Добавить' : 'Add Task';
+  var skipBtn = lang === 'he-IL' ? 'ללא תאריך' : lang === 'ru-RU' ? 'Без даты' : 'No date';
+
+  picker.innerHTML = '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;">🎭 ' + title + '</div>' +
+    '<div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">"' + taskTitle + '"</div>' +
+    '<input type="date" id="task-due-date" value="' + today + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box;">' +
+    '<div style="display:flex;gap:8px;">' +
+    '<button id="skip-date-btn" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;font-size:13px;">' + skipBtn + '</button>' +
+    '<button id="add-task-btn" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--accent);color:white;cursor:pointer;font-size:13px;font-weight:600;">' + addBtn + '</button>' +
+    '</div>';
+
+  document.body.appendChild(picker);
+
+  document.getElementById('add-task-btn').onclick = function() {
+    var date = document.getElementById('task-due-date').value;
+    picker.remove();
+    addGoogleTaskWithDate(taskTitle, date || null);
+  };
+  document.getElementById('skip-date-btn').onclick = function() {
+    picker.remove();
+    addGoogleTaskWithDate(taskTitle, null);
+  };
+}
+
+async function extractDueDateWithAI(fullText) {
   if (!apiKey) return null;
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -2330,9 +2362,9 @@ async function extractDueDateWithAI(taskTitle, fullText) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: `Today is ${today}. Extract a due date from the user's message. Return ONLY a date in YYYY-MM-DD format, or null if no date is mentioned. Examples: "tomorrow" → next day, "Friday" → next Friday, "next week" → 7 days from now, "ביום שישי" → next Friday, "в пятницу" → next Friday.` }] },
+        system_instruction: { parts: [{ text: `Today is ${today}. Extract a due date from the user's message. Return ONLY a date in YYYY-MM-DD format, or the word null if no date is mentioned. Do not return anything else.` }] },
         contents: [{ role: 'user', parts: [{ text: fullText }] }],
-        generationConfig: { maxOutputTokens: 20, temperature: 0 }
+        generationConfig: { maxOutputTokens: 15, temperature: 0 }
       })
     });
     const data = await res.json();
@@ -2385,36 +2417,6 @@ async function addGoogleTaskWithDate(taskTitle, dueDate) {
 }
 
 async function checkTodoVoiceCommand(text) {
-  const lower = text.toLowerCase().trim();
-
-  // Check if this is a response to a pending due date request
-  if (getPendingTask()) {
-    // For the follow-up, just try to extract date from what the user said
-    const dateResponse = await extractDueDateWithAI('', text);
-    if (dateResponse) {
-      const task = getPendingTask();
-      setPendingTask(null);
-      await addGoogleTaskWithDate(task, dateResponse);
-      return true;
-    }
-    const noDuePatterns = [/no date|no due|without date|someday|anytime|asap/i, /ללא תאריך|בלי תאריך/i, /без даты|когда-нибудь/i];
-    if (noDuePatterns.some(p => p.test(text))) {
-      const task = getPendingTask();
-      setPendingTask(null);
-      await addGoogleTaskWithDate(task, null);
-      return true;
-    }
-    const lang = detectTaskLanguage(getPendingTask());
-    const prompt = lang === 'he-IL'
-      ? 'Master, אנא ציין תאריך יעד למשימה "' + getPendingTask() + '" (מחר, ביום שישי, ללא תאריך...)'
-      : lang === 'ru-RU'
-      ? 'Master, укажите срок для задачи "' + getPendingTask() + '" (завтра, в пятницу, без даты...)'
-      : 'Yesss Master! When is "' + getPendingTask() + '" due? (tomorrow, Friday, no date...)';
-    addBubble('ai', prompt);
-    speak(prompt);
-    return true;
-  }
-
   const patterns = [
     /^(?:add task|new task|add to do|add todo)[,:\s]+(.+)/i,
     /^(?:remind me to|reminder to|reminder)[,:\s]+(.+)/i,
@@ -2429,19 +2431,14 @@ async function checkTodoVoiceCommand(text) {
     const match = text.match(pattern);
     if (match) {
       const taskTitle = match[1].trim();
-      const dueDate = await extractDueDateWithAI(taskTitle, text);
+      // Try to extract date from the original message
+      const dueDate = await extractDueDateWithAI(text);
       if (dueDate) {
+        // Date found in message — add directly
         await addGoogleTaskWithDate(taskTitle, dueDate);
       } else {
-        setPendingTask(taskTitle);
-        const lang = detectTaskLanguage(taskTitle);
-        const prompt = lang === 'he-IL'
-          ? 'כן, Master! מתי צריך לבצע את "' + taskTitle + '"? (מחר, ביום שישי, ללא תאריך...)'
-          : lang === 'ru-RU'
-          ? 'Да, Master! Когда нужно выполнить "' + taskTitle + '"? (завтра, в пятницу, без даты...)'
-          : 'Yesss Master! When is "' + taskTitle + '" due? (tomorrow, Friday, no date...)';
-        addBubble('ai', prompt);
-        speak(prompt);
+        // No date — show date picker popup
+        showDatePicker(taskTitle);
       }
       return true;
     }
