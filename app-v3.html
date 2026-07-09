@@ -2318,6 +2318,11 @@ async function completeTodoTask(listId, taskId, el) {
 }
 
 // ── Voice command detection for adding tasks ───────────────────────────────
+function getPendingTask() { return null; } // legacy stub - no longer used
+function setPendingTask(val) { sessionStorage.removeItem('pendingTask'); } // clear any old values
+// Clear any stale pending task from old version
+sessionStorage.removeItem('pendingTask');
+
 function showDatePicker(taskTitle) {
   // Remove any existing date picker
   var existing = document.getElementById('task-date-picker');
