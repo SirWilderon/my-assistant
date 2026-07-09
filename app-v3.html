@@ -2318,8 +2318,9 @@ async function completeTodoTask(listId, taskId, el) {
 }
 
 // ── Voice command detection for adding tasks ───────────────────────────────
-// Pending task waiting for due date
-var pendingTask = null;
+// Pending task waiting for due date - stored in sessionStorage to survive mic reloads
+function getPendingTask() { return sessionStorage.getItem('pendingTask'); }
+function setPendingTask(val) { if (val) sessionStorage.setItem('pendingTask', val); else sessionStorage.removeItem('pendingTask'); }
 
 async function extractDueDateWithAI(taskTitle, fullText) {
   if (!apiKey) return null;
@@ -2387,29 +2388,28 @@ async function checkTodoVoiceCommand(text) {
   const lower = text.toLowerCase().trim();
 
   // Check if this is a response to a pending due date request
-  if (pendingTask) {
+  if (getPendingTask()) {
     // For the follow-up, just try to extract date from what the user said
     const dateResponse = await extractDueDateWithAI('', text);
-    addBubble('ai', 'DEBUG: date response = "' + dateResponse + '" from "' + text + '"');
     if (dateResponse) {
-      const task = pendingTask;
-      pendingTask = null;
+      const task = getPendingTask();
+      setPendingTask(null);
       await addGoogleTaskWithDate(task, dateResponse);
       return true;
     }
     const noDuePatterns = [/no date|no due|without date|someday|anytime|asap/i, /ללא תאריך|בלי תאריך/i, /без даты|когда-нибудь/i];
     if (noDuePatterns.some(p => p.test(text))) {
-      const task = pendingTask;
-      pendingTask = null;
+      const task = getPendingTask();
+      setPendingTask(null);
       await addGoogleTaskWithDate(task, null);
       return true;
     }
-    const lang = detectTaskLanguage(pendingTask);
+    const lang = detectTaskLanguage(getPendingTask());
     const prompt = lang === 'he-IL'
-      ? 'Master, אנא ציין תאריך יעד למשימה "' + pendingTask + '" (מחר, ביום שישי, ללא תאריך...)'
+      ? 'Master, אנא ציין תאריך יעד למשימה "' + getPendingTask() + '" (מחר, ביום שישי, ללא תאריך...)'
       : lang === 'ru-RU'
-      ? 'Master, укажите срок для задачи "' + pendingTask + '" (завтра, в пятницу, без даты...)'
-      : 'Yesss Master! When is "' + pendingTask + '" due? (tomorrow, Friday, no date...)';
+      ? 'Master, укажите срок для задачи "' + getPendingTask() + '" (завтра, в пятницу, без даты...)'
+      : 'Yesss Master! When is "' + getPendingTask() + '" due? (tomorrow, Friday, no date...)';
     addBubble('ai', prompt);
     speak(prompt);
     return true;
@@ -2433,7 +2433,7 @@ async function checkTodoVoiceCommand(text) {
       if (dueDate) {
         await addGoogleTaskWithDate(taskTitle, dueDate);
       } else {
-        pendingTask = taskTitle;
+        setPendingTask(taskTitle);
         const lang = detectTaskLanguage(taskTitle);
         const prompt = lang === 'he-IL'
           ? 'כן, Master! מתי צריך לבצע את "' + taskTitle + '"? (מחר, ביום שישי, ללא תאריך...)'
