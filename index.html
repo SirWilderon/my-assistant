@@ -2397,7 +2397,10 @@ async function addGoogleTaskWithDate(taskTitle, dueDate) {
   const listName = listsData.items?.[0]?.title || 'Tasks';
 
   const body = { title: taskTitle };
-  if (dueDate) body.due = new Date(dueDate + 'T00:00:00Z').toISOString();
+  if (dueDate) {
+    // Google Tasks API requires RFC 3339 format with time component
+    body.due = dueDate + 'T00:00:00.000Z';
+  }
 
   const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/' + listId + '/tasks', {
     method: 'POST',
@@ -2417,7 +2420,7 @@ async function addGoogleTaskWithDate(taskTitle, dueDate) {
     speak(confirmMsg);
     return true;
   }
-  addBubble('ai', '❌ Could not add task.');
+  addBubble('ai', '❌ Could not add task: ' + (task.error?.message || JSON.stringify(task).substring(0,100)));
   return false;
 }
 
