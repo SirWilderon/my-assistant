@@ -338,20 +338,15 @@
     </div>
     <div class="step-body">
       <p>Igor can send you daily task reminders via Telegram at 9am, 12pm, 3pm and 6pm.</p>
-      <p style="margin-top:10px;"><a href="https://t.me/BotFather" target="_blank" style="color:#4f8ef7;font-size:13px;">→ Create a Telegram bot with @BotFather</a></p>
-      <div class="input-group">
-        <div class="input-label">Bot Token</div>
-        <input type="text" id="telegram-token" placeholder="123456789:ABCdef...">
-      </div>
-      <div class="input-group">
-        <div class="input-label">Your Chat ID</div>
-        <input type="text" id="telegram-chat-id" placeholder="123456789">
-        <div style="font-size:11px;color:#4b5563;margin-top:4px;">Send a message to your bot, then visit: https://api.telegram.org/bot{TOKEN}/getUpdates to find your chat ID</div>
-      </div>
+      <p style="margin-top:12px;font-size:14px;">1. First, start a chat with Igor's bot:</p>
+      <a href="https://t.me/Wilderon_bot" target="_blank" style="display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:10px 16px;background:rgba(0,136,204,0.15);border:1px solid rgba(0,136,204,0.3);border-radius:10px;color:#29b6f6;font-size:14px;font-weight:600;text-decoration:none;">
+        📱 Open @Wilderon_bot on Telegram
+      </a>
+      <p style="margin-top:16px;font-size:14px;">2. After starting the bot, click below to verify:</p>
       <div class="step-status" id="status-5"></div>
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary" onclick="saveTelegram()">Save & Continue →</button>
+      <button class="btn btn-primary" onclick="verifyTelegram()">✅ I started the bot →</button>
       <button class="btn btn-skip" onclick="skipStep(5)">Skip</button>
     </div>
   </div>
@@ -555,15 +550,45 @@
     } catch(e) { setStatus(4, 'Error: ' + e.message, 'error'); }
   };
 
-  window.saveTelegram = async function() {
-    const token = document.getElementById('telegram-token').value.trim();
-    const chatId = document.getElementById('telegram-chat-id').value.trim();
-    if (!token || !chatId) { setStatus(5, 'Please enter both bot token and chat ID', 'error'); return; }
-    setStatus(5, 'Saving...', '');
+  window.verifyTelegram = async function() {
+    setStatus(5, 'Looking for your Telegram account...', '');
     try {
-      await saveToFirebase({ telegramToken: token, telegramChatId: chatId });
-      setStatus(5, '✅ Telegram configured!', 'success');
-      setTimeout(() => goToStep(6), 800);
+      // Fetch recent updates from the shared bot
+      const BOT_TOKEN = '8288224785:AAEZT_bJpb85ZHrlb5rfkr_IpKLmnwnDIDU';
+      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=50`);
+      const data = await res.json();
+      if (!data.ok) { setStatus(5, 'Could not reach Telegram bot', 'error'); return; }
+
+      // Find the most recent message from any user
+      const updates = data.result || [];
+      if (updates.length === 0) {
+        setStatus(5, '⚠️ No messages found. Please open @Wilderon_bot on Telegram and tap Start first!', 'error');
+        return;
+      }
+
+      // Get the most recent chat
+      const latest = updates[updates.length - 1];
+      const chatId = latest.message?.chat?.id;
+      const firstName = latest.message?.chat?.first_name || '';
+      const username = latest.message?.chat?.username || '';
+
+      if (!chatId) { setStatus(5, 'Could not find your chat. Please send a message to the bot first.', 'error'); return; }
+
+      // Save to Firebase
+      await saveToFirebase({ telegramChatId: String(chatId), telegramUsername: username });
+
+      // Send a welcome message
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `🎭 Yesss! Igor is now connected to your Telegram, ${firstName || 'Master'}! You will receive daily task reminders here. *mwahaha*`
+        })
+      });
+
+      setStatus(5, `✅ Connected! Welcome ${firstName || username}! Check your Telegram for a message from Igor.`, 'success');
+      setTimeout(() => goToStep(6), 1500);
     } catch(e) { setStatus(5, 'Error: ' + e.message, 'error'); }
   };
 
