@@ -553,13 +553,20 @@
   window.verifyTelegram = async function() {
     setStatus(5, 'Looking for your Telegram account...', '');
     try {
+      // Read bot token securely from Firestore (only accessible to logged-in users)
+      const configRef = doc(db, 'config', 'telegram');
+      const configSnap = await getDoc(configRef);
+      if (!configSnap.exists()) {
+        setStatus(5, 'Telegram not configured. Please contact support.', 'error');
+        return;
+      }
+      const BOT_TOKEN = configSnap.data().token;
+
       // Fetch recent updates from the shared bot
-      const BOT_TOKEN = '8288224785:AAEZT_bJpb85ZHrlb5rfkr_IpKLmnwnDIDU';
       const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=50`);
       const data = await res.json();
       if (!data.ok) { setStatus(5, 'Could not reach Telegram bot', 'error'); return; }
 
-      // Find the most recent message from any user
       const updates = data.result || [];
       if (updates.length === 0) {
         setStatus(5, '⚠️ No messages found. Please open @Wilderon_bot on Telegram and tap Start first!', 'error');
