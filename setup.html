@@ -511,7 +511,7 @@
       goToStep(2);
       return;
     }
-    if (!key.startsWith('AIza')) { setStatus(1, 'Invalid Gemini key — should start with AIza', 'error'); return; }
+    if (key.length < 20) { setStatus(1, 'Key seems too short — please check it', 'error'); return; }
     setStatus(1, 'Saving...', '');
     try {
       await saveToFirebase({ geminiKey: key });
