@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Igor Assistant — Setup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0f;
+    color: #e8e6e0;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79,142,247,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo { font-size: 18px; font-weight: 600; }
+  .logo span { color: #4f8ef7; }
+
+  .user-info {
+    font-size: 13px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sign-out {
+    font-size: 12px;
+    color: #4f8ef7;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px 8px;
+  }
+
+  .main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+
+  .intro {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .intro h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+  .intro p { color: #9ca3af; font-size: 15px; }
+
+  /* Progress bar */
+  .progress-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 32px;
+    justify-content: center;
+  }
+
+  .progress-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.3s;
+  }
+
+  .progress-dot.done { background: #34d399; }
+  .progress-dot.active { background: #4f8ef7; }
+
+  /* Step card */
+  .step-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .step-card.active { display: block; }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .step-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: rgba(79,142,247,0.1);
+    flex-shrink: 0;
+  }
+
+  .step-title { font-size: 18px; font-weight: 600; }
+  .step-desc { font-size: 13px; color: #9ca3af; margin-top: 2px; }
+
+  .step-body { color: #9ca3af; font-size: 14px; line-height: 1.6; }
+
+  input[type="text"], input[type="password"], input[type="email"] {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #e8e6e0;
+    font-size: 14px;
+    outline: none;
+    margin-top: 12px;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: rgba(79,142,247,0.5); }
+  input::placeholder { color: #4b5563; }
+
+  .input-group { margin-top: 16px; }
+  .input-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+
+  .btn-primary { background: #4f8ef7; color: white; }
+  .btn-primary:hover { background: #3b7de8; }
+  .btn-secondary { background: rgba(255,255,255,0.06); color: #9ca3af; }
+  .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+  .btn-skip { background: transparent; color: #6b7280; border: 1px solid rgba(255,255,255,0.08); }
+  .btn-skip:hover { color: #9ca3af; }
+  .btn-google { background: white; color: #1f1f1f; }
+  .btn-google:hover { background: #f5f5f5; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 12px;
+  }
+
+  .badge-connected { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+  .badge-skip { background: rgba(156,163,175,0.1); color: #9ca3af; border: 1px solid rgba(156,163,175,0.2); }
+
+  .step-status { margin-top: 12px; font-size: 13px; color: #6b7280; min-height: 20px; }
+  .step-status.error { color: #f87171; }
+  .step-status.success { color: #34d399; }
+
+  /* Done screen */
+  #done-screen {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  #done-screen.active { display: block; }
+
+  .done-icon { font-size: 72px; margin-bottom: 24px; display: block; }
+  .done-title { font-size: 28px; font-weight: 600; margin-bottom: 12px; }
+  .done-desc { color: #9ca3af; font-size: 15px; margin-bottom: 32px; }
+
+  .launch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 32px;
+    background: #4f8ef7;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .launch-btn:hover { background: #3b7de8; transform: translateY(-2px); }
+
+  .hint { font-size: 12px; color: #4b5563; margin-top: 16px; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎭 <span>Igor</span> Assistant</div>
+  <div class="user-info">
+    <span id="user-email">Loading...</span>
+    <button class="sign-out" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="intro">
+    <h1>Welcome! Let's set up Igor 🎭</h1>
+    <p>Connect your accounts so Igor can manage your tasks, calendar, and reminders.</p>
+  </div>
+
+  <!-- Progress dots -->
+  <div class="progress-bar" id="progress-bar"></div>
+
+  <!-- Step 1: Gemini API Key -->
+  <div class="step-card active" id="step-1">
+    <div class="step-header">
+      <div class="step-icon">✨</div>
+      <div>
+        <div class="step-title">AI Brain</div>
+        <div class="step-desc">Connect your Gemini API key to power the AI chat</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>Igor uses Google Gemini for intelligent conversations. Get your free API key from Google AI Studio.</p>
+      <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#4f8ef7;font-size:13px;">→ Get your free Gemini API key</a>
+      <div class="input-group">
+        <div class="input-label">Gemini API Key</div>
+        <input type="password" id="gemini-key" placeholder="AIza...">
+      </div>
+      <div class="step-status" id="status-1"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveGemini()">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Google Account -->
+  <div class="step-card" id="step-2">
+    <div class="step-header">
+      <div class="step-icon">📅</div>
+      <div>
+        <div class="step-title">Google Calendar & Tasks</div>
+        <div class="step-desc">Connect to manage your tasks and see your calendar</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>Igor will read your Google Tasks and Calendar events to answer questions about your schedule and recite your due tasks.</p>
+      <div id="google-status-badge"></div>
+      <div class="step-status" id="status-2"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-google" onclick="connectGoogle()">🔗 Connect Google</button>
+      <button class="btn btn-skip" onclick="nextStep()">Skip</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Microsoft To Do -->
+  <div class="step-card" id="step-3">
+    <div class="step-header">
+      <div class="step-icon">✅</div>
+      <div>
+        <div class="step-title">Microsoft To Do</div>
+        <div class="step-desc">Sync your Microsoft tasks with Google Tasks</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>Igor keeps your Microsoft To Do tasks in sync with Google Tasks — so everything stays up to date across both apps.</p>
+      <p style="margin-top:10px;font-size:13px;color:#6b7280;">Note: Microsoft sync runs on the desktop app (separate setup required).</p>
+      <div class="step-status" id="status-3"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="nextStep()">Got it →</button>
+      <button class="btn btn-skip" onclick="nextStep()">Skip</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Exchange Calendar -->
+  <div class="step-card" id="step-4">
+    <div class="step-header">
+      <div class="step-icon">🏢</div>
+      <div>
+        <div class="step-title">Work Exchange Calendar</div>
+        <div class="step-desc">Connect your work Exchange/Outlook calendar (optional)</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>If your workplace uses Microsoft Exchange, Igor can include your work calendar events in your daily briefing and task recitation.</p>
+      <div class="input-group">
+        <div class="input-label">Exchange Server URL</div>
+        <input type="text" id="exchange-url" placeholder="https://mail.company.com/ews/exchange.asmx">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Username (DOMAIN\username)</div>
+        <input type="text" id="exchange-user" placeholder="DOMAIN\username">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Password</div>
+        <input type="password" id="exchange-pass" placeholder="••••••••">
+      </div>
+      <div class="step-status" id="status-4"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveExchange()">Save & Continue →</button>
+      <button class="btn btn-skip" onclick="skipStep(4)">Skip</button>
+    </div>
+  </div>
+
+  <!-- Step 5: Telegram -->
+  <div class="step-card" id="step-5">
+    <div class="step-header">
+      <div class="step-icon">📱</div>
+      <div>
+        <div class="step-title">Telegram Reminders</div>
+        <div class="step-desc">Get task reminders sent to your Telegram (optional)</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>Igor can send you daily task reminders via Telegram at 9am, 12pm, 3pm and 6pm.</p>
+      <p style="margin-top:10px;"><a href="https://t.me/BotFather" target="_blank" style="color:#4f8ef7;font-size:13px;">→ Create a Telegram bot with @BotFather</a></p>
+      <div class="input-group">
+        <div class="input-label">Bot Token</div>
+        <input type="text" id="telegram-token" placeholder="123456789:ABCdef...">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Your Chat ID</div>
+        <input type="text" id="telegram-chat-id" placeholder="123456789">
+        <div style="font-size:11px;color:#4b5563;margin-top:4px;">Send a message to your bot, then visit: https://api.telegram.org/bot{TOKEN}/getUpdates to find your chat ID</div>
+      </div>
+      <div class="step-status" id="status-5"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveTelegram()">Save & Continue →</button>
+      <button class="btn btn-skip" onclick="skipStep(5)">Skip</button>
+    </div>
+  </div>
+
+  <!-- Step 6: ElevenLabs -->
+  <div class="step-card" id="step-6">
+    <div class="step-header">
+      <div class="step-icon">🎭</div>
+      <div>
+        <div class="step-title">Igor's Voice</div>
+        <div class="step-desc">Give Igor a dramatic AI voice (optional)</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>Igor can speak with a custom AI voice using ElevenLabs. Find a dramatic, raspy, villainous voice in their library!</p>
+      <p style="margin-top:10px;"><a href="https://elevenlabs.io/voice-library" target="_blank" style="color:#4f8ef7;font-size:13px;">→ Browse ElevenLabs Voice Library</a></p>
+      <div class="input-group">
+        <div class="input-label">ElevenLabs API Key</div>
+        <input type="password" id="el-key" placeholder="sk_...">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Voice ID</div>
+        <input type="text" id="el-voice" placeholder="abc123xyz">
+      </div>
+      <div class="step-status" id="status-6"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveElevenLabs()">Save & Finish →</button>
+      <button class="btn btn-skip" onclick="skipStep(6)">Skip</button>
+    </div>
+  </div>
+
+  <!-- Done screen -->
+  <div id="done-screen">
+    <span class="done-icon">🎉</span>
+    <div class="done-title">Igor is ready, Master!</div>
+    <div class="done-desc">Your assistant has been configured and is ready to serve. Yesss Master!</div>
+    <a href="index.html" class="launch-btn">🎭 Launch Igor →</a>
+    <div class="hint">You can update these settings anytime from the app</div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut as fbSignOut, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCgX1yAKcfEN6hGyifTeiwozPaowkh3ARc",
+    authDomain: "igor-assistant-612df.firebaseapp.com",
+    projectId: "igor-assistant-612df",
+    storageBucket: "igor-assistant-612df.firebasestorage.app",
+    messagingSenderId: "242750080007",
+    appId: "1:242750080007:web:dc682f0170c565616716a2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  let currentUser = null;
+  let currentStep = 1;
+  const totalSteps = 6;
+
+  // Auth check
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+    currentUser = user;
+    document.getElementById('user-email').textContent = user.displayName || user.email;
+
+    // Build progress dots
+    const bar = document.getElementById('progress-bar');
+    bar.innerHTML = '';
+    for (let i = 1; i <= totalSteps; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'progress-dot' + (i === 1 ? ' active' : '');
+      dot.id = 'dot-' + i;
+      bar.appendChild(dot);
+    }
+
+    // Load existing settings
+    await loadSettings();
+  });
+
+  async function loadSettings() {
+    try {
+      const docRef = doc(db, 'users', currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.geminiKey) document.getElementById('gemini-key').value = '•'.repeat(20);
+        if (data.exchangeUrl) document.getElementById('exchange-url').value = data.exchangeUrl;
+        if (data.exchangeUser) document.getElementById('exchange-user').value = data.exchangeUser;
+        if (data.telegramChatId) document.getElementById('telegram-chat-id').value = data.telegramChatId;
+        if (data.elevenLabsVoiceId) document.getElementById('el-voice').value = data.elevenLabsVoiceId;
+        if (data.googleConnected) {
+          document.getElementById('google-status-badge').innerHTML = '<span class="status-badge badge-connected">✅ Google Connected</span>';
+        }
+      }
+    } catch(e) { console.log('Load settings error:', e); }
+  }
+
+  async function saveToFirebase(data) {
+    const docRef = doc(db, 'users', currentUser.uid);
+    const existing = (await getDoc(docRef)).data() || {};
+    await setDoc(docRef, { ...existing, ...data, updatedAt: new Date().toISOString() });
+  }
+
+  function setStatus(stepNum, msg, type) {
+    const el = document.getElementById('status-' + stepNum);
+    if (el) { el.textContent = msg; el.className = 'step-status ' + (type || ''); }
+  }
+
+  function updateProgress(step) {
+    for (let i = 1; i <= totalSteps; i++) {
+      const dot = document.getElementById('dot-' + i);
+      if (!dot) continue;
+      if (i < step) dot.className = 'progress-dot done';
+      else if (i === step) dot.className = 'progress-dot active';
+      else dot.className = 'progress-dot';
+    }
+  }
+
+  function goToStep(step) {
+    // Hide all steps
+    for (let i = 1; i <= totalSteps; i++) {
+      const el = document.getElementById('step-' + i);
+      if (el) el.classList.remove('active');
+    }
+    document.getElementById('done-screen').classList.remove('active');
+
+    if (step > totalSteps) {
+      document.getElementById('done-screen').classList.add('active');
+      document.getElementById('progress-bar').style.display = 'none';
+    } else {
+      const el = document.getElementById('step-' + step);
+      if (el) el.classList.add('active');
+      updateProgress(step);
+    }
+    currentStep = step;
+  }
+
+  window.nextStep = function() { goToStep(currentStep + 1); };
+
+  window.skipStep = function(step) {
+    saveToFirebase({ ['step' + step + 'Skipped']: true });
+    goToStep(step + 1);
+  };
+
+  window.saveGemini = async function() {
+    const key = document.getElementById('gemini-key').value.trim();
+    if (!key || key.includes('•')) {
+      // Already set, just continue
+      goToStep(2);
+      return;
+    }
+    if (!key.startsWith('AIza')) { setStatus(1, 'Invalid Gemini key — should start with AIza', 'error'); return; }
+    setStatus(1, 'Saving...', '');
+    try {
+      await saveToFirebase({ geminiKey: key });
+      // Also save to localStorage for immediate use
+      localStorage.setItem('gemini_key', key);
+      setStatus(1, '✅ Saved!', 'success');
+      setTimeout(() => goToStep(2), 800);
+    } catch(e) { setStatus(1, 'Error: ' + e.message, 'error'); }
+  };
+
+  window.connectGoogle = async function() {
+    setStatus(2, 'Opening Google sign-in...', '');
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/calendar');
+      provider.addScope('https://www.googleapis.com/auth/tasks');
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential.accessToken;
+      if (token) {
+        localStorage.setItem('google_token', token);
+        localStorage.setItem('google_token_expiry', String(Date.now() + 3600 * 1000));
+        await saveToFirebase({ googleConnected: true, googleEmail: result.user.email });
+        document.getElementById('google-status-badge').innerHTML = '<span class="status-badge badge-connected">✅ Google Connected</span>';
+        setStatus(2, '✅ Google connected successfully!', 'success');
+        setTimeout(() => goToStep(3), 1000);
+      }
+    } catch(e) { setStatus(2, 'Error: ' + e.message, 'error'); }
+  };
+
+  window.saveExchange = async function() {
+    const url = document.getElementById('exchange-url').value.trim();
+    const user = document.getElementById('exchange-user').value.trim();
+    const pass = document.getElementById('exchange-pass').value;
+    if (!url || !user || !pass) { setStatus(4, 'Please fill in all Exchange fields', 'error'); return; }
+    setStatus(4, 'Saving...', '');
+    try {
+      await saveToFirebase({ exchangeUrl: url, exchangeUser: user, exchangePass: pass });
+      setStatus(4, '✅ Exchange settings saved!', 'success');
+      setTimeout(() => goToStep(5), 800);
+    } catch(e) { setStatus(4, 'Error: ' + e.message, 'error'); }
+  };
+
+  window.saveTelegram = async function() {
+    const token = document.getElementById('telegram-token').value.trim();
+    const chatId = document.getElementById('telegram-chat-id').value.trim();
+    if (!token || !chatId) { setStatus(5, 'Please enter both bot token and chat ID', 'error'); return; }
+    setStatus(5, 'Saving...', '');
+    try {
+      await saveToFirebase({ telegramToken: token, telegramChatId: chatId });
+      setStatus(5, '✅ Telegram configured!', 'success');
+      setTimeout(() => goToStep(6), 800);
+    } catch(e) { setStatus(5, 'Error: ' + e.message, 'error'); }
+  };
+
+  window.saveElevenLabs = async function() {
+    const key = document.getElementById('el-key').value.trim();
+    const voiceId = document.getElementById('el-voice').value.trim();
+    if (key || voiceId) {
+      if (!key || !voiceId) { setStatus(6, 'Please enter both API key and Voice ID', 'error'); return; }
+      setStatus(6, 'Saving...', '');
+      try {
+        await saveToFirebase({ elevenLabsKey: key, elevenLabsVoiceId: voiceId });
+        localStorage.setItem('elevenlabs_key', key);
+        localStorage.setItem('elevenlabs_voice_id', voiceId);
+        setStatus(6, '✅ Igor voice configured!', 'success');
+        setTimeout(() => goToStep(7), 800);
+      } catch(e) { setStatus(6, 'Error: ' + e.message, 'error'); }
+    } else {
+      goToStep(7);
+    }
+  };
+
+  window.signOut = async function() {
+    await fbSignOut(auth);
+    window.location.href = 'login.html';
+  };
+</script>
+
+</body>
+</html>
