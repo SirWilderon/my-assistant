@@ -562,8 +562,9 @@
       }
       const BOT_TOKEN = configSnap.data().token;
 
-      // Fetch recent updates from the shared bot
-      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=50`);
+      // Fetch recent updates via CORS proxy
+      const PROXY = 'https://corsproxy.io/?url=';
+      const res = await fetch(PROXY + encodeURIComponent(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=50`));
       const data = await res.json();
       if (!data.ok) { setStatus(5, 'Could not reach Telegram bot', 'error'); return; }
 
@@ -584,8 +585,8 @@
       // Save to Firebase
       await saveToFirebase({ telegramChatId: String(chatId), telegramUsername: username });
 
-      // Send a welcome message
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      // Send a welcome message via CORS proxy
+      await fetch(PROXY + encodeURIComponent(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
