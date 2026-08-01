@@ -524,21 +524,30 @@
       provider.addScope('https://www.googleapis.com/auth/calendar');
       provider.addScope('https://www.googleapis.com/auth/tasks');
       provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+      provider.setCustomParameters({ prompt: 'consent' });
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential.accessToken;
-      if (token) {
-        localStorage.setItem('google_token', token);
+      const token = credential?.accessToken;
+
+      // Also check localStorage as fallback
+      const localToken = localStorage.getItem('google_token');
+      const localExpiry = localStorage.getItem('google_token_expiry');
+      const useToken = token || (localToken && parseInt(localExpiry) > Date.now() ? localToken : null);
+
+      if (useToken) {
+        localStorage.setItem('google_token', useToken);
         localStorage.setItem('google_token_expiry', String(Date.now() + 3600 * 1000));
         await saveToFirebase({
           googleConnected: true,
           googleEmail: result.user.email,
-          googleToken: token,
+          googleToken: useToken,
           googleTokenExpiry: Date.now() + 3600 * 1000
         });
         document.getElementById('google-status-badge').innerHTML = '<span class="status-badge badge-connected">✅ Google Connected</span>';
         setStatus(2, '✅ Google connected successfully!', 'success');
         setTimeout(() => goToStep(3), 1000);
+      } else {
+        setStatus(2, '⚠️ Could not get Google token. Please try again.', 'error');
       }
     } catch(e) { setStatus(2, 'Error: ' + e.message, 'error'); }
   };
