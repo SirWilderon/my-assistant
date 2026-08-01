@@ -542,7 +542,8 @@
           googleConnected: true,
           googleEmail: result.user.email,
           googleToken: useToken,
-          googleTokenExpiry: Date.now() + 3600 * 1000
+          googleTokenExpiry: Date.now() + 3600 * 1000,
+          googleRefreshToken: credential?.refreshToken || null
         });
         document.getElementById('google-status-badge').innerHTML = '<span class="status-badge badge-connected">✅ Google Connected</span>';
         setStatus(2, '✅ Google connected successfully!', 'success');
