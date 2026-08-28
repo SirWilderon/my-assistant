@@ -2386,12 +2386,24 @@ async function addGoogleTaskWithDate(taskTitle, dueDate) {
     if (saved && expiry && Date.now() < parseInt(expiry)) googleAccessToken = saved;
   }
   if (!googleAccessToken) {
-    addBubble('ai', '⚠️ Please connect Google first — tap the 📅G button.');
+    const reconnectMsg = '⚠️ Google session expired. <a href="https://sirwilderon.github.io/my-assistant/google-auth.html" style="color:#4f8ef7;">Tap here to reconnect</a> then try again.';
+    addBubble('ai', reconnectMsg);
+    speak('Google session expired. Please reconnect Google to add tasks.');
     return false;
   }
   const listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=1', {
     headers: { Authorization: 'Bearer ' + googleAccessToken }
   });
+  // Check for auth error
+  if (listsRes.status === 401) {
+    googleAccessToken = null;
+    localStorage.removeItem('google_token');
+    localStorage.removeItem('google_token_expiry');
+    const reconnectMsg = '⚠️ Google session expired. <a href="https://sirwilderon.github.io/my-assistant/google-auth.html" style="color:#4f8ef7;">Tap here to reconnect</a> then try again.';
+    addBubble('ai', reconnectMsg);
+    speak('Google session expired. Please reconnect Google to add tasks.');
+    return false;
+  }
   const listsData = await listsRes.json();
   const listId = listsData.items?.[0]?.id || '@default';
   const listName = listsData.items?.[0]?.title || 'Tasks';
